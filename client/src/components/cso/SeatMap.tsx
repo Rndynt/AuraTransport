@@ -43,9 +43,16 @@ export default function SeatMap({
 
     const seatAvailability = seatmap.seatAvailability[seatNo];
     
-    // If seat is booked, do nothing
-    if (!seatAvailability.available && !seatAvailability.held) {
-      return;
+    // If seat is booked or held by someone else, do nothing
+    if (!seatAvailability.available) {
+      // Only allow clicking if it's held by current user (already selected)
+      if (seatAvailability.held && !localSelectedSeats.has(seatNo)) {
+        return;
+      }
+      // If not held and not available, it's booked
+      if (!seatAvailability.held) {
+        return;
+      }
     }
 
     // If seat is already selected, deselect it
@@ -62,7 +69,7 @@ export default function SeatMap({
 
     // If seat is available, select it and create hold
     try {
-      await createHold(trip.id, seatNo, originSeq, destinationSeq, 120);
+      await createHold(trip.id, seatNo, originSeq, destinationSeq, 1200); // 20 minutes = 1200 seconds
       setLocalSelectedSeats(prev => new Set(prev).add(seatNo));
       onSeatSelect(seatNo);
       // Refresh seatmap to get updated hold status

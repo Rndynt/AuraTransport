@@ -96,9 +96,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
                       <div
                         className={cn(
                           "flex items-center px-2 lg:px-3 py-2 lg:py-2 text-sm rounded-md transition-colors w-full cursor-pointer",
-                          location.startsWith("/masters") && item.path.includes("masters")
-                            ? "bg-primary text-primary-foreground"
-                            : location === item.path
+                          location === item.path
                             ? "bg-primary text-primary-foreground"
                             : "text-foreground hover:bg-muted"
                         )}
