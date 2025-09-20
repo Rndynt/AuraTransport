@@ -1,4 +1,10 @@
 import { randomUUID } from "crypto";
+import { getConfig } from "../../config";
+
+interface SeatHoldOwner {
+  operatorId: string;
+  bookingId?: string;
+}
 
 interface SeatHold {
   holdRef: string;
@@ -6,6 +12,8 @@ interface SeatHold {
   seatNo: string;
   legIndexes: number[];
   expiresAt: number;
+  ttlClass: 'short' | 'long';
+  owner: SeatHoldOwner;
 }
 
 export class HoldsService {
@@ -29,16 +37,42 @@ export class HoldsService {
     }
   }
 
-  async createSeatHold(tripId: string, seatNo: string, legIndexes: number[], ttlSeconds: number = 120): Promise<string> {
+  async createSeatHold(
+    tripId: string, 
+    seatNo: string, 
+    legIndexes: number[], 
+    ttlClass: 'short' | 'long' = 'short',
+    owner: SeatHoldOwner
+  ): Promise<{ ok: boolean; holdRef?: string; expiresAt?: number; ownedByYou?: boolean; reason?: string }> {
+    const config = getConfig();
     const now = Date.now();
+    const ttlSeconds = ttlClass === 'short' ? config.holdTtlShortSeconds : config.holdTtlLongSeconds;
     const expiresAt = now + (ttlSeconds * 1000);
     const holdRef = randomUUID();
 
     // Check if any of the required legs are already held or booked
     for (const legIndex of legIndexes) {
       const seatKey = this.getSeatKey(tripId, seatNo, legIndex);
-      if (this.seatHolds.has(seatKey)) {
-        throw new Error(`Seat ${seatNo} is already held for leg ${legIndex}`);
+      const existingHoldRef = this.seatHolds.get(seatKey);
+      
+      if (existingHoldRef) {
+        const existingHold = this.holds.get(existingHoldRef);
+        if (existingHold) {
+          // Check if it's the same operator
+          if (existingHold.owner.operatorId === owner.operatorId) {
+            return {
+              ok: false,
+              reason: 'already-held-by-you',
+              ownedByYou: true
+            };
+          } else {
+            return {
+              ok: false,
+              reason: 'held-by-other',
+              ownedByYou: false
+            };
+          }
+        }
       }
     }
 
@@ -48,7 +82,9 @@ export class HoldsService {
       tripId,
       seatNo,
       legIndexes,
-      expiresAt
+      expiresAt,
+      ttlClass,
+      owner
     };
 
     this.holds.set(holdRef, hold);
@@ -59,7 +95,12 @@ export class HoldsService {
       this.seatHolds.set(seatKey, holdRef);
     }
 
-    return holdRef;
+    return {
+      ok: true,
+      holdRef,
+      expiresAt,
+      ownedByYou: true
+    };
   }
 
   async releaseSeatHold(tripId: string, seatNo: string, legIndexes: number[]): Promise<void> {
@@ -117,5 +158,60 @@ export class HoldsService {
       return null;
     }
     return hold;
+  }
+
+  async getSeatHoldInfo(tripId: string, seatNo: string, legIndex: number): Promise<SeatHold | null> {
+    const seatKey = this.getSeatKey(tripId, seatNo, legIndex);
+    const holdRef = this.seatHolds.get(seatKey);
+    
+    if (holdRef) {
+      const hold = this.holds.get(holdRef);
+      if (hold && hold.expiresAt > Date.now()) {
+        return hold;
+      }
+    }
+    return null;
+  }
+
+  async extendHold(holdRef: string, ttlClass: 'short' | 'long'): Promise<boolean> {
+    const hold = this.holds.get(holdRef);
+    if (!hold) return false;
+
+    const config = getConfig();
+    const now = Date.now();
+    const ttlSeconds = ttlClass === 'short' ? config.holdTtlShortSeconds : config.holdTtlLongSeconds;
+    
+    hold.expiresAt = now + (ttlSeconds * 1000);
+    hold.ttlClass = ttlClass;
+    
+    return true;
+  }
+
+  async convertHoldsToLong(operatorId: string, bookingId: string): Promise<void> {
+    // Find all holds owned by this operator and convert them to long holds
+    for (const [holdRef, hold] of Array.from(this.holds.entries())) {
+      if (hold.owner.operatorId === operatorId && !hold.owner.bookingId) {
+        hold.owner.bookingId = bookingId;
+        this.extendHold(holdRef, 'long');
+      }
+    }
+  }
+
+  async releaseHoldsByOwner(operatorId: string, bookingId?: string): Promise<void> {
+    const holdsToRelease: string[] = [];
+    
+    for (const [holdRef, hold] of Array.from(this.holds.entries())) {
+      if (hold.owner.operatorId === operatorId) {
+        if (bookingId && hold.owner.bookingId === bookingId) {
+          holdsToRelease.push(holdRef);
+        } else if (!bookingId && !hold.owner.bookingId) {
+          holdsToRelease.push(holdRef);
+        }
+      }
+    }
+    
+    for (const holdRef of holdsToRelease) {
+      this.releaseHoldByRef(holdRef);
+    }
   }
 }

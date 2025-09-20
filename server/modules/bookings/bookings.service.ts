@@ -29,8 +29,8 @@ export class BookingsService {
 
   async createBooking(
     bookingData: InsertBooking,
-    passengers: InsertPassenger[],
-    payment: InsertPayment,
+    passengers: { fullName: string; phone?: string; idNumber?: string; seatNo: string }[],
+    payment: { method: 'cash' | 'qr' | 'ewallet' | 'bank'; amount: number },
     idempotencyKey?: string
   ): Promise<{ booking: Booking; printPayload: any }> {
     
@@ -40,7 +40,7 @@ export class BookingsService {
       legIndexes.push(i);
     }
 
-    // Check seat holds for all passengers
+    // Check seat holds for all passengers and verify ownership
     for (const passenger of passengers) {
       const isHeld = await this.holdsService.isSeatHeld(
         bookingData.tripId,
@@ -51,6 +51,17 @@ export class BookingsService {
       if (!isHeld) {
         throw new Error(`Seat ${passenger.seatNo} is not held or hold has expired`);
       }
+
+      // Verify hold ownership by checking the first leg
+      const holdInfo = await this.holdsService.getSeatHoldInfo(
+        bookingData.tripId,
+        passenger.seatNo,
+        legIndexes[0]
+      );
+      
+      if (!holdInfo || holdInfo.owner.operatorId !== (bookingData.createdBy || 'default-operator')) {
+        throw new Error(`Seat ${passenger.seatNo} is not held by your operator`);
+      }
     }
 
     // Calculate pricing
@@ -59,6 +70,13 @@ export class BookingsService {
       bookingData.originSeq,
       bookingData.destinationSeq
     );
+
+    // Validate payment amount matches fare quote
+    const expectedTotal = Number(fareQuote.total);
+    const paymentAmount = Number(payment.amount);
+    if (Math.abs(paymentAmount - expectedTotal) > 0.01) {
+      throw new Error(`Payment amount ${paymentAmount} does not match expected total ${expectedTotal}`);
+    }
 
     // Create booking in transaction
     const booking = await this.storage.createBooking({
@@ -93,7 +111,8 @@ export class BookingsService {
 
     // Create payment
     await this.storage.createPayment({
-      ...payment,
+      method: payment.method,
+      amount: payment.amount.toString(),
       bookingId: booking.id
     });
 
@@ -109,16 +128,176 @@ export class BookingsService {
     return { booking, printPayload };
   }
 
-  async createHold(tripId: string, seatNo: string, originSeq: number, destinationSeq: number, ttlSeconds: number = 120): Promise<string> {
+  async createHold(
+    tripId: string, 
+    seatNo: string, 
+    originSeq: number, 
+    destinationSeq: number, 
+    ttlSeconds: number = 120,
+    operatorId: string = 'default-operator'
+  ): Promise<{ ok: boolean; holdRef?: string; expiresAt?: number; ownedByYou?: boolean; reason?: string }> {
     const legIndexes = [];
     for (let i = originSeq; i < destinationSeq; i++) {
       legIndexes.push(i);
     }
 
-    return await this.holdsService.createSeatHold(tripId, seatNo, legIndexes, ttlSeconds);
+    const ttlClass = ttlSeconds <= 120 ? 'short' : 'long';
+    return await this.holdsService.createSeatHold(
+      tripId, 
+      seatNo, 
+      legIndexes, 
+      ttlClass,
+      { operatorId }
+    );
   }
 
   async releaseHold(holdRef: string): Promise<void> {
     await this.holdsService.releaseHoldByRef(holdRef);
+  }
+
+  async createPendingBooking(
+    bookingData: InsertBooking,
+    passengers: { fullName: string; phone?: string; idNumber?: string; seatNo: string }[],
+    operatorId: string
+  ): Promise<{ booking: Booking; pendingExpiresAt: Date }> {
+    const { getConfig } = await import("../../config");
+    const config = getConfig();
+    
+    // Validate that all required seats are held by this operator
+    const legIndexes = [];
+    for (let i = bookingData.originSeq; i < bookingData.destinationSeq; i++) {
+      legIndexes.push(i);
+    }
+
+    // Check seat holds for all passengers and verify ownership
+    for (const passenger of passengers) {
+      const isHeld = await this.holdsService.isSeatHeld(
+        bookingData.tripId,
+        passenger.seatNo,
+        legIndexes
+      );
+      
+      if (!isHeld) {
+        throw new Error(`Seat ${passenger.seatNo} is not held or hold has expired`);
+      }
+
+      // Verify hold ownership by checking the first leg
+      const holdInfo = await this.holdsService.getSeatHoldInfo(
+        bookingData.tripId,
+        passenger.seatNo,
+        legIndexes[0]
+      );
+      
+      if (!holdInfo || holdInfo.owner.operatorId !== operatorId) {
+        throw new Error(`Seat ${passenger.seatNo} is not held by your operator`);
+      }
+    }
+
+    // Calculate pricing
+    const fareQuote = await this.pricingService.quoteFare(
+      bookingData.tripId,
+      bookingData.originSeq,
+      bookingData.destinationSeq
+    );
+
+    // Set pending expiration
+    const now = new Date();
+    const pendingExpiresAt = new Date(now.getTime() + (config.holdTtlLongSeconds * 1000));
+
+    // Create pending booking
+    const booking = await this.storage.createBooking({
+      ...bookingData,
+      status: 'pending',
+      totalAmount: fareQuote.total.toString(),
+      pendingExpiresAt
+    });
+
+    // Create passengers
+    for (const passengerData of passengers) {
+      await this.storage.createPassenger({
+        ...passengerData,
+        bookingId: booking.id,
+        fareAmount: fareQuote.perPassenger.toString(),
+        fareBreakdown: fareQuote.breakdown
+      });
+    }
+
+    // Convert short holds to long holds and tie them to this booking
+    await this.holdsService.convertHoldsToLong(operatorId, booking.id);
+
+    return { booking, pendingExpiresAt };
+  }
+
+  async getPendingBookings(outletId?: string, operatorId?: string): Promise<Booking[]> {
+    // Get all pending bookings
+    const allBookings = await this.storage.getBookings();
+    
+    let pendingBookings = allBookings.filter(b => 
+      b.status === 'pending' && 
+      b.pendingExpiresAt && 
+      new Date(b.pendingExpiresAt) > new Date()
+    );
+
+    // Filter by outlet if provided
+    if (outletId) {
+      pendingBookings = pendingBookings.filter(b => b.outletId === outletId);
+    }
+
+    // TODO: Add operator filtering once we have operator tracking in bookings
+    // For now, we'll use the createdBy field as a proxy
+    if (operatorId) {
+      pendingBookings = pendingBookings.filter(b => b.createdBy === operatorId);
+    }
+
+    return pendingBookings;
+  }
+
+  async releasePendingBooking(bookingId: string, operatorId: string): Promise<void> {
+    const booking = await this.storage.getBookingById(bookingId);
+    if (!booking) {
+      throw new Error(`Booking with id ${bookingId} not found`);
+    }
+
+    if (booking.status !== 'pending') {
+      throw new Error(`Booking ${bookingId} is not in pending status`);
+    }
+
+    // Release holds associated with this booking
+    await this.holdsService.releaseHoldsByOwner(operatorId, bookingId);
+
+    // Cancel the booking
+    await this.storage.updateBooking(bookingId, { status: 'canceled' });
+  }
+
+  // Auto-cleanup method for expired pending bookings
+  async cleanupExpiredPendingBookings(): Promise<void> {
+    const now = new Date();
+    const allBookings = await this.storage.getBookings();
+    
+    const expiredPendingBookings = allBookings.filter(b => 
+      b.status === 'pending' && 
+      b.pendingExpiresAt && 
+      new Date(b.pendingExpiresAt) <= now
+    );
+
+    for (const booking of expiredPendingBookings) {
+      try {
+        // Release holds associated with this booking
+        // We don't have operatorId here, so we'll release by booking ID
+        const passengers = await this.storage.getPassengers(booking.id);
+        for (const passenger of passengers) {
+          const legIndexes = [];
+          for (let i = booking.originSeq; i < booking.destinationSeq; i++) {
+            legIndexes.push(i);
+          }
+          await this.holdsService.releaseSeatHold(booking.tripId, passenger.seatNo, legIndexes);
+        }
+
+        // Cancel the booking
+        await this.storage.updateBooking(booking.id, { status: 'canceled' });
+      } catch (error) {
+        console.error(`Failed to cleanup expired booking ${booking.id}:`, error);
+      }
+    }
   }
 }

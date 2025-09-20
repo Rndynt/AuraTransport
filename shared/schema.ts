@@ -163,6 +163,7 @@ export const bookings = pgTable("bookings", {
   totalAmount: numeric("total_amount", { precision: 12, scale: 2 }).notNull(),
   currency: text("currency").default('IDR'),
   createdBy: text("created_by"),
+  pendingExpiresAt: timestamp("pending_expires_at", { withTimezone: true }),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
 });
 
