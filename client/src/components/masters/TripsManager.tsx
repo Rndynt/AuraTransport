@@ -173,7 +173,7 @@ export default function TripsManager() {
       vehicleId: trip.vehicleId,
       layoutId: trip.layoutId || '',
       capacity: trip.capacity.toString(),
-      status: trip.status
+      status: trip.status || 'scheduled'
     });
     setIsDialogOpen(true);
   };
@@ -417,7 +417,7 @@ export default function TripsManager() {
                       <TableCell>{trip.serviceDate}</TableCell>
                       <TableCell>{getVehicleName(trip.vehicleId)}</TableCell>
                       <TableCell>{trip.capacity} seats</TableCell>
-                      <TableCell>{getStatusBadge(trip.status)}</TableCell>
+                      <TableCell>{getStatusBadge(trip.status || 'scheduled')}</TableCell>
                       <TableCell>
                         <div className="flex items-center space-x-1">
                           <Button

@@ -76,6 +76,13 @@ export const tripsApi = {
       .then(res => res.json()) as Promise<SeatmapResponse>
 };
 
+// Trip Stop Times API
+export const tripStopTimesApi = {
+  create: (data: any) => apiRequest('POST', '/api/trip-stop-times', data).then(res => res.json()),
+  update: (id: string, data: any) => apiRequest('PUT', `/api/trip-stop-times/${id}`, data).then(res => res.json()),
+  delete: (id: string) => apiRequest('DELETE', `/api/trip-stop-times/${id}`)
+};
+
 // Price Rules API
 export const priceRulesApi = {
   getAll: () => fetch('/api/price-rules').then(res => res.json()) as Promise<PriceRule[]>,
