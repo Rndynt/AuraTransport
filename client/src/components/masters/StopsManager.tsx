@@ -123,7 +123,7 @@ export default function StopsManager() {
       city: stop.city || '',
       lat: stop.lat || '',
       lng: stop.lng || '',
-      isOutlet: stop.isOutlet
+      isOutlet: Boolean(stop.isOutlet)
     });
     setIsDialogOpen(true);
   };
