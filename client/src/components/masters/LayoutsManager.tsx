@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,6 +34,7 @@ export default function LayoutsManager() {
     cols: ''
   });
   const [previewSeatMap, setPreviewSeatMap] = useState<SeatMapItem[]>([]);
+  const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
   const { data: layouts = [], isLoading } = useQuery({
@@ -133,12 +134,21 @@ export default function LayoutsManager() {
     const rows = parseInt(formData.rows, 10);
     const cols = parseInt(formData.cols, 10);
     
-    if (rows > 0 && cols > 0 && rows <= 20 && cols <= 10) {
+    if (!isNaN(rows) && !isNaN(cols) && rows > 0 && cols > 0 && rows <= 20 && cols <= 10) {
       const seatMap = generateSeatMap(rows, cols);
       setPreviewSeatMap(seatMap);
     } else {
       setPreviewSeatMap([]);
     }
+  };
+
+  const debouncedPreviewUpdate = () => {
+    if (debounceTimeoutRef.current) {
+      clearTimeout(debounceTimeoutRef.current);
+    }
+    debounceTimeoutRef.current = setTimeout(() => {
+      handleRowsColsChange();
+    }, 300);
   };
 
   const handleCreate = () => {
@@ -161,12 +171,35 @@ export default function LayoutsManager() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    const trimmedName = formData.name.trim();
     const rows = parseInt(formData.rows, 10);
     const cols = parseInt(formData.cols, 10);
-    const seatMap = editingLayout ? (editingLayout.seatMap as SeatMapItem[]) : generateSeatMap(rows, cols);
+    
+    // Validate name
+    if (!trimmedName) {
+      toast({
+        title: "Name Required",
+        description: "Please enter a layout name",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Validate input values
+    if (isNaN(rows) || isNaN(cols) || rows <= 0 || cols <= 0 || rows > 20 || cols > 10) {
+      toast({
+        title: "Invalid Input",
+        description: "Please enter valid numbers for rows (1-20) and columns (1-10)",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Always generate seatMap from current inputs (fixes edit mode bug)
+    const seatMap = generateSeatMap(rows, cols);
     
     const submitData = {
-      name: formData.name,
+      name: trimmedName,
       rows,
       cols,
       seatMap
@@ -226,8 +259,9 @@ export default function LayoutsManager() {
                     type="number"
                     value={formData.rows}
                     onChange={(e) => {
-                      setFormData(prev => ({ ...prev, rows: e.target.value }));
-                      setTimeout(handleRowsColsChange, 100);
+                      const value = e.target.value;
+                      setFormData(prev => ({ ...prev, rows: value }));
+                      debouncedPreviewUpdate();
                     }}
                     placeholder="e.g., 10"
                     min="1"
@@ -243,8 +277,9 @@ export default function LayoutsManager() {
                     type="number"
                     value={formData.cols}
                     onChange={(e) => {
-                      setFormData(prev => ({ ...prev, cols: e.target.value }));
-                      setTimeout(handleRowsColsChange, 100);
+                      const value = e.target.value;
+                      setFormData(prev => ({ ...prev, cols: value }));
+                      debouncedPreviewUpdate();
                     }}
                     placeholder="e.g., 4"
                     min="1"
@@ -301,7 +336,7 @@ export default function LayoutsManager() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending || previewSeatMap.length === 0}
+                  disabled={createMutation.isPending || updateMutation.isPending || (!editingLayout && previewSeatMap.length === 0) || !formData.name.trim()}
                   data-testid="submit-button"
                 >
                   {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : 'Save'}
