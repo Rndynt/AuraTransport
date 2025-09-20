@@ -15,19 +15,19 @@ export async function seedData() {
     code: "PWK", 
     name: "Purwakarta",
     city: "Purwakarta",
-    isOutlet: true
+    isOutlet: false
   });
 
   const bandungStop = await storage.createStop({
     code: "BDG",
     name: "Bandung Terminal", 
     city: "Bandung",
-    isOutlet: false
+    isOutlet: true
   });
 
   console.log("✅ Stops created");
 
-  // Create outlets
+  // Create outlets (only for stops with isOutlet=true: Jakarta & Bandung)
   await storage.createOutlet({
     stopId: jakartaStop.id,
     name: "Jakarta Terminal Outlet",
@@ -36,10 +36,10 @@ export async function seedData() {
   });
 
   await storage.createOutlet({
-    stopId: purwakartaStop.id,
-    name: "Purwakarta Outlet",
-    address: "Jl. Terminal Purwakarta", 
-    phone: "+62-264-1234567"
+    stopId: bandungStop.id,
+    name: "Bandung Terminal Outlet",
+    address: "Jl. Terminal Bandung", 
+    phone: "+62-22-1234567"
   });
 
   console.log("✅ Outlets created");
