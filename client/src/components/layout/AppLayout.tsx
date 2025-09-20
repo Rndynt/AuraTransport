@@ -1,34 +1,96 @@
-import { ReactNode } from "react";
+import { ReactNode, useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
+import { Button } from "@/components/ui/button";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface AppLayoutProps {
   children: ReactNode;
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const isMobile = useIsMobile();
+
+  // Handle escape key and body scroll lock
+  useEffect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && sidebarOpen) {
+        setSidebarOpen(false);
+      }
+    };
+
+    if (sidebarOpen && isMobile) {
+      document.addEventListener('keydown', handleEscape);
+      document.body.style.overflow = 'hidden';
+      
+      return () => {
+        document.removeEventListener('keydown', handleEscape);
+        document.body.style.overflow = 'unset';
+      };
+    }
+
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [sidebarOpen, isMobile]);
+
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar />
+      {/* Mobile sidebar overlay */}
+      {isMobile && sidebarOpen && (
+        <div 
+          className="fixed inset-0 z-40 bg-black bg-opacity-50 lg:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <Sidebar 
+        isOpen={sidebarOpen} 
+        onClose={() => setSidebarOpen(false)}
+        isMobile={isMobile}
+      />
+      
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-card border-b border-border px-6 py-4">
+        <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-semibold text-foreground">CSO Booking Terminal</h2>
-              <p className="text-sm text-muted-foreground">Issue tickets for multi-stop routes</p>
-            </div>
             <div className="flex items-center space-x-4">
-              <div className="text-sm text-muted-foreground">
-                <i className="fas fa-user-circle mr-2"></i>
-                CSO User
+              {/* Mobile menu button */}
+              {isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setSidebarOpen(true)}
+                  className="lg:hidden"
+                  aria-expanded={sidebarOpen}
+                  aria-controls="mobile-sidebar"
+                  aria-label="Open navigation menu"
+                >
+                  <i className="fas fa-bars text-lg"></i>
+                </Button>
+              )}
+              <div>
+                <h2 className="text-base lg:text-lg font-semibold text-foreground">
+                  CSO Booking Terminal
+                </h2>
+                <p className="text-xs lg:text-sm text-muted-foreground hidden sm:block">
+                  Issue tickets for multi-stop routes
+                </p>
               </div>
-              <div className="text-sm text-muted-foreground">
-                <i className="fas fa-calendar mr-2"></i>
-                <span>{new Date().toLocaleDateString()}</span>
+            </div>
+            <div className="flex items-center space-x-2 lg:space-x-4">
+              <div className="text-xs lg:text-sm text-muted-foreground hidden md:flex items-center">
+                <i className="fas fa-user-circle mr-1 lg:mr-2"></i>
+                <span className="hidden lg:inline">CSO User</span>
+              </div>
+              <div className="text-xs lg:text-sm text-muted-foreground flex items-center">
+                <i className="fas fa-calendar mr-1 lg:mr-2"></i>
+                <span className="hidden sm:inline">{new Date().toLocaleDateString()}</span>
               </div>
             </div>
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-6">
+        <main className="flex-1 overflow-auto p-3 lg:p-6">
           {children}
         </main>
       </div>

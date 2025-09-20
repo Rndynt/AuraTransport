@@ -7,8 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 
 interface PassengerData {
   fullName: string;
-  phone: string;
-  idNumber: string;
+  phone?: string | null;
+  idNumber?: string | null;
   seatNo: string;
 }
 
@@ -142,7 +142,7 @@ export default function PassengerForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor={`fullName-${index}`}>
                     Full Name <span className="text-destructive">*</span>
@@ -161,7 +161,7 @@ export default function PassengerForm({
                   <Label htmlFor={`phone-${index}`}>Phone Number</Label>
                   <Input
                     id={`phone-${index}`}
-                    value={passenger.phone}
+                    value={passenger.phone || ''}
                     onChange={(e) => handleInputChange(index, 'phone', e.target.value)}
                     placeholder="+62 xxx xxx xxxx"
                     data-testid={`input-phone-${index}`}
@@ -172,7 +172,7 @@ export default function PassengerForm({
                   <Label htmlFor={`idNumber-${index}`}>ID Number</Label>
                   <Input
                     id={`idNumber-${index}`}
-                    value={passenger.idNumber}
+                    value={passenger.idNumber || ''}
                     onChange={(e) => handleInputChange(index, 'idNumber', e.target.value)}
                     placeholder="ID/Passport number"
                     data-testid={`input-idnumber-${index}`}
