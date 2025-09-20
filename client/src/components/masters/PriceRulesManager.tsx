@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -9,6 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { DatePicker } from '@/components/ui/date-picker';
 import { useToast } from '@/hooks/use-toast';
 import { priceRulesApi, tripPatternsApi, tripsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
@@ -20,8 +22,8 @@ interface PriceRuleFormData {
   tripId: string;
   legIndex: string;
   ruleJson: string;
-  validFrom: string;
-  validTo: string;
+  validFrom: Date | undefined;
+  validTo: Date | undefined;
   priority: string;
 }
 
@@ -34,8 +36,8 @@ export default function PriceRulesManager() {
     tripId: '',
     legIndex: '',
     ruleJson: '',
-    validFrom: '',
-    validTo: '',
+    validFrom: undefined,
+    validTo: undefined,
     priority: '1'
   });
   const { toast } = useToast();
@@ -121,8 +123,8 @@ export default function PriceRulesManager() {
       tripId: '',
       legIndex: '',
       ruleJson: '',
-      validFrom: '',
-      validTo: '',
+      validFrom: undefined,
+      validTo: undefined,
       priority: '1'
     });
   };
@@ -149,8 +151,8 @@ export default function PriceRulesManager() {
       tripId: rule.tripId || '',
       legIndex: rule.legIndex?.toString() || '',
       ruleJson: JSON.stringify(rule.rule, null, 2),
-      validFrom: rule.validFrom ? new Date(rule.validFrom).toISOString().split('T')[0] : '',
-      validTo: rule.validTo ? new Date(rule.validTo).toISOString().split('T')[0] : '',
+      validFrom: rule.validFrom ? new Date(rule.validFrom) : undefined,
+      validTo: rule.validTo ? new Date(rule.validTo) : undefined,
       priority: (rule.priority || 0).toString()
     });
     setIsDialogOpen(true);
@@ -168,8 +170,8 @@ export default function PriceRulesManager() {
         tripId: formData.tripId || null,
         legIndex: formData.legIndex ? parseInt(formData.legIndex, 10) : null,
         rule,
-        validFrom: formData.validFrom ? new Date(formData.validFrom).toISOString() : null,
-        validTo: formData.validTo ? new Date(formData.validTo).toISOString() : null,
+        validFrom: formData.validFrom ? formData.validFrom.toISOString() : null,
+        validTo: formData.validTo ? formData.validTo.toISOString() : null,
         priority: parseInt(formData.priority, 10)
       };
 
@@ -355,21 +357,21 @@ export default function PriceRulesManager() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label htmlFor="validFrom">Valid From</Label>
-                  <Input
+                  <DatePicker
                     id="validFrom"
-                    type="date"
-                    value={formData.validFrom}
-                    onChange={(e) => setFormData(prev => ({ ...prev, validFrom: e.target.value }))}
+                    date={formData.validFrom}
+                    onDateChange={(date) => setFormData(prev => ({ ...prev, validFrom: date }))}
+                    placeholder="Select start date"
                     data-testid="input-valid-from"
                   />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="validTo">Valid To</Label>
-                  <Input
+                  <DatePicker
                     id="validTo"
-                    type="date"
-                    value={formData.validTo}
-                    onChange={(e) => setFormData(prev => ({ ...prev, validTo: e.target.value }))}
+                    date={formData.validTo}
+                    onDateChange={(date) => setFormData(prev => ({ ...prev, validTo: date }))}
+                    placeholder="Select end date"
                     data-testid="input-valid-to"
                   />
                 </div>
@@ -468,11 +470,11 @@ export default function PriceRulesManager() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {rule.validFrom && rule.validTo 
-                          ? `${new Date(rule.validFrom).toISOString().split('T')[0]} to ${new Date(rule.validTo).toISOString().split('T')[0]}`
+                          ? `${format(new Date(rule.validFrom), 'MMM dd, yyyy')} to ${format(new Date(rule.validTo), 'MMM dd, yyyy')}`
                           : rule.validFrom 
-                          ? `From ${new Date(rule.validFrom).toISOString().split('T')[0]}`
+                          ? `From ${format(new Date(rule.validFrom), 'MMM dd, yyyy')}`
                           : rule.validTo 
-                          ? `Until ${new Date(rule.validTo).toISOString().split('T')[0]}`
+                          ? `Until ${format(new Date(rule.validTo), 'MMM dd, yyyy')}`
                           : 'Always active'
                         }
                       </TableCell>
