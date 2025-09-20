@@ -1,25 +1,26 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { MapPin, Store, Truck, LayoutGrid, Route, Calendar, DollarSign, Ticket, List, Bus, X } from "lucide-react";
 
 const navigationItems = [
   {
     title: "Masters",
     items: [
-      { name: "Stops", path: "/masters", icon: "fas fa-map-marker-alt" },
-      { name: "Outlets", path: "/masters", icon: "fas fa-store" },
-      { name: "Vehicles", path: "/masters", icon: "fas fa-shuttle-van" },
-      { name: "Layouts", path: "/masters", icon: "fas fa-th-large" },
-      { name: "Trip Patterns", path: "/masters", icon: "fas fa-route" },
-      { name: "Trips", path: "/masters", icon: "fas fa-calendar-alt" },
-      { name: "Price Rules", path: "/masters", icon: "fas fa-money-bill-wave" },
+      { name: "Stops", path: "/masters", icon: MapPin },
+      { name: "Outlets", path: "/masters", icon: Store },
+      { name: "Vehicles", path: "/masters", icon: Truck },
+      { name: "Layouts", path: "/masters", icon: LayoutGrid },
+      { name: "Trip Patterns", path: "/masters", icon: Route },
+      { name: "Trips", path: "/masters", icon: Calendar },
+      { name: "Price Rules", path: "/masters", icon: DollarSign },
     ]
   },
   {
     title: "Operations",
     items: [
-      { name: "CSO Booking", path: "/cso", icon: "fas fa-ticket-alt" },
-      { name: "All Bookings", path: "/bookings", icon: "fas fa-list" },
+      { name: "CSO Booking", path: "/cso", icon: Ticket },
+      { name: "All Bookings", path: "/bookings", icon: List },
     ]
   }
 ];
@@ -57,8 +58,8 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
       <div className="p-4 lg:p-6 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg lg:text-xl font-bold text-primary">
-              <i className="fas fa-bus mr-2"></i>
+            <h1 className="text-lg lg:text-xl font-bold text-primary flex items-center">
+              <Bus className="w-5 h-5 mr-2" />
               <span className="hidden sm:inline">BusTicket Pro</span>
               <span className="sm:hidden">BTP</span>
             </h1>
@@ -71,9 +72,11 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
               variant="ghost"
               size="sm"
               onClick={onClose}
-              className="lg:hidden"
+              className="p-1 h-8 w-8"
+              data-testid="close-sidebar"
+              aria-label="Close navigation"
             >
-              <i className="fas fa-times text-lg"></i>
+              <X className="w-4 h-4" />
             </Button>
           )}
         </div>
@@ -100,7 +103,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
                         data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                         onClick={handleLinkClick}
                       >
-                        <i className={`${item.icon} w-4 lg:w-5 mr-2 lg:mr-3 text-center`}></i>
+                        <item.icon className="w-4 lg:w-5 h-4 lg:h-5 mr-2 lg:mr-3" />
                         <span className="truncate">{item.name}</span>
                       </div>
                     </Link>

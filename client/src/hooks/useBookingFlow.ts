@@ -107,8 +107,8 @@ export function useBookingFlow() {
         createdBy: 'CSO User',
         passengers: state.passengers.map((passenger, index) => ({
           fullName: passenger.fullName,
-          phone: passenger.phone,
-          idNumber: passenger.idNumber,
+          phone: passenger.phone || undefined,
+          idNumber: passenger.idNumber || undefined,
           seatNo: state.selectedSeats[index]
         })),
         payment: state.payment

@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { tripsApi, stopsApi } from '@/lib/api';
+import { Route, Circle, Clock } from 'lucide-react';
 import type { Trip, Stop, TripStopTime } from '@/types';
 
 interface RouteTimelineProps {
@@ -32,9 +33,10 @@ export default function RouteTimeline({
 
   const getStopById = (stopId: string) => stops.find(s => s.id === stopId);
 
-  const formatTime = (timestamp: string | null) => {
+  const formatTime = (timestamp: string | Date | null) => {
     if (!timestamp) return '--:--';
-    return new Date(timestamp).toLocaleTimeString('en-US', {
+    const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
+    return date.toLocaleTimeString('en-US', {
       hour: '2-digit',
       minute: '2-digit',
       hour12: false
@@ -49,9 +51,9 @@ export default function RouteTimeline({
 
   return (
     <Card data-testid="route-timeline">
-      <CardHeader>
-        <CardTitle className="flex items-center">
-          <i className="fas fa-route mr-2 text-primary"></i>
+      <CardHeader className="pb-3">
+        <CardTitle className="flex items-center text-base">
+          <Route className="w-4 h-4 mr-2 text-primary" />
           Route & Schedule
         </CardTitle>
       </CardHeader>
@@ -71,41 +73,45 @@ export default function RouteTimeline({
                 const isDestination = selectedDestination?.id === stop.id;
 
                 return (
-                  <div key={stopTime.id} className="relative flex items-center space-x-4 pb-4">
-                    <div className={`w-8 h-8 rounded-full flex items-center justify-center relative z-10 ${getStopColor(stopTime.stopSequence)}`}>
-                      <i className="fas fa-circle text-xs"></i>
+                  <div key={stopTime.id} className="relative flex items-center space-x-3 pb-3">
+                    <div className={`w-6 h-6 rounded-full flex items-center justify-center relative z-10 ${getStopColor(stopTime.stopSequence)}`}>
+                      <Circle className="w-2 h-2 fill-current" />
                     </div>
-                    <div className="flex-1 grid grid-cols-3 gap-4">
-                      <div>
-                        <p className="font-medium text-foreground">{stop.name}</p>
+                    <div className="flex-1 grid grid-cols-1 md:grid-cols-3 gap-2 md:gap-4">
+                      <div className="min-w-0">
+                        <p className="font-medium text-sm">{stop.name}</p>
                         <p className="text-xs text-muted-foreground">{stop.code}</p>
                       </div>
-                      <div>
+                      <div className="flex items-center space-x-1 md:block">
                         {index === 0 ? (
                           <>
-                            <p className="text-sm text-muted-foreground">Departure</p>
-                            <p className="font-mono text-sm">{formatTime(stopTime.departAt)}</p>
+                            <Clock className="w-3 h-3 text-muted-foreground md:hidden" />
+                            <p className="text-xs text-muted-foreground hidden md:block">Departure</p>
+                            <p className="font-mono text-xs md:text-sm">{formatTime(stopTime.departAt)}</p>
                           </>
                         ) : index === stopTimes.length - 1 ? (
                           <>
-                            <p className="text-sm text-muted-foreground">Arrival</p>
-                            <p className="font-mono text-sm">{formatTime(stopTime.arriveAt)}</p>
+                            <Clock className="w-3 h-3 text-muted-foreground md:hidden" />
+                            <p className="text-xs text-muted-foreground hidden md:block">Arrival</p>
+                            <p className="font-mono text-xs md:text-sm">{formatTime(stopTime.arriveAt)}</p>
                           </>
                         ) : (
                           <>
-                            <p className="text-sm text-muted-foreground">Arrive / Depart</p>
-                            <p className="font-mono text-sm">{formatTime(stopTime.arriveAt)}</p>
-                            <p className="font-mono text-sm">{formatTime(stopTime.departAt)}</p>
+                            <Clock className="w-3 h-3 text-muted-foreground md:hidden" />
+                            <p className="text-xs text-muted-foreground hidden md:block">Arrive / Depart</p>
+                            <p className="font-mono text-xs md:text-sm">{formatTime(stopTime.arriveAt)}</p>
+                            <p className="font-mono text-xs md:text-sm">{formatTime(stopTime.departAt)}</p>
                           </>
                         )}
                       </div>
-                      <div className="space-x-2">
+                      <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                         {index < stopTimes.length - 1 && (
                           <Button
                             size="sm"
                             variant={isOrigin ? "default" : "outline"}
                             onClick={() => onOriginSelect(stop, stopTime.stopSequence)}
                             data-testid={`origin-${stop.code}`}
+                            className="text-xs px-2 py-1 h-auto"
                           >
                             Origin
                           </Button>
@@ -116,6 +122,7 @@ export default function RouteTimeline({
                             variant={isDestination ? "default" : "outline"}
                             onClick={() => onDestinationSelect(stop, stopTime.stopSequence)}
                             data-testid={`destination-${stop.code}`}
+                            className="text-xs px-2 py-1 h-auto"
                           >
                             Destination
                           </Button>

@@ -11,6 +11,7 @@ import { useBookingFlow } from '@/hooks/useBookingFlow';
 import { useSeatHold } from '@/hooks/useSeatHold';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { ChevronLeft, ChevronRight, Users, CreditCard } from 'lucide-react';
 import type { Trip, Stop, Outlet } from '@/types';
 
 export default function CsoPage() {
@@ -65,8 +66,9 @@ export default function CsoPage() {
       destinationStop: stop, 
       destinationSeq: sequence 
     });
-    if (state.originStop && canProceedToNextStep()) {
-      nextStep();
+    // Automatically move to seat selection when both origin and destination are selected
+    if (state.originStop && state.currentStep === 3) {
+      setTimeout(() => nextStep(), 100); // Small delay to ensure state is updated
     }
   };
 
@@ -153,14 +155,36 @@ export default function CsoPage() {
 
       case 4:
         return state.trip && state.originSeq && state.destinationSeq ? (
-          <SeatMap
-            trip={state.trip}
-            originSeq={state.originSeq}
-            destinationSeq={state.destinationSeq}
-            selectedSeats={state.selectedSeats}
-            onSeatSelect={handleSeatSelect}
-            onSeatDeselect={handleSeatDeselect}
-          />
+          <div className="space-y-4">
+            <SeatMap
+              trip={state.trip}
+              originSeq={state.originSeq}
+              destinationSeq={state.destinationSeq}
+              selectedSeats={state.selectedSeats}
+              onSeatSelect={handleSeatSelect}
+              onSeatDeselect={handleSeatDeselect}
+            />
+            {/* Navigation buttons */}
+            <div className="flex items-center justify-between pt-4">
+              <Button 
+                variant="outline" 
+                onClick={prevStep}
+                data-testid="back-to-route"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back to Route
+              </Button>
+              {state.selectedSeats.length > 0 && (
+                <Button 
+                  onClick={nextStep}
+                  data-testid="continue-to-passengers"
+                >
+                  Continue to Passengers
+                  <Users className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+            </div>
+          </div>
         ) : (
           <div className="text-center py-8">
             <p className="text-muted-foreground">Please select origin and destination first</p>
@@ -172,25 +196,70 @@ export default function CsoPage() {
 
       case 5:
         return (
-          <PassengerForm
-            selectedSeats={state.selectedSeats}
-            passengers={state.passengers}
-            onPassengersUpdate={handlePassengersUpdate}
-            onNext={nextStep}
-            onBack={prevStep}
-          />
+          <div className="space-y-4">
+            <PassengerForm
+              selectedSeats={state.selectedSeats}
+              passengers={state.passengers}
+              onPassengersUpdate={handlePassengersUpdate}
+              onNext={nextStep}
+              onBack={prevStep}
+            />
+            {/* Navigation buttons for mobile */}
+            <div className="flex items-center justify-between pt-4 lg:hidden">
+              <Button 
+                variant="outline" 
+                onClick={prevStep}
+                data-testid="back-to-seats"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back to Seats
+              </Button>
+              {canProceedToNextStep() && (
+                <Button 
+                  onClick={nextStep}
+                  data-testid="continue-to-payment"
+                >
+                  Continue to Payment
+                  <CreditCard className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+            </div>
+          </div>
         );
 
       case 6:
         return (
-          <PaymentPanel
-            totalAmount={75000} // This should come from pricing calculation
-            payment={state.payment}
-            onPaymentUpdate={handlePaymentUpdate}
-            onSubmit={handleCreateBooking}
-            onBack={prevStep}
-            loading={bookingLoading}
-          />
+          <div className="space-y-4">
+            <PaymentPanel
+              totalAmount={75000} // This should come from pricing calculation
+              payment={state.payment}
+              onPaymentUpdate={handlePaymentUpdate}
+              onSubmit={handleCreateBooking}
+              onBack={prevStep}
+              loading={bookingLoading}
+            />
+            {/* Navigation buttons for mobile */}
+            <div className="flex items-center justify-between pt-4 lg:hidden">
+              <Button 
+                variant="outline" 
+                onClick={prevStep}
+                data-testid="back-to-passengers"
+              >
+                <ChevronLeft className="w-4 h-4 mr-1" />
+                Back to Passengers
+              </Button>
+              {canProceedToNextStep() && (
+                <Button 
+                  onClick={handleCreateBooking}
+                  disabled={bookingLoading}
+                  data-testid="complete-booking"
+                >
+                  {bookingLoading ? 'Processing...' : 'Complete Booking'}
+                  <ChevronRight className="w-4 h-4 ml-1" />
+                </Button>
+              )}
+            </div>
+          </div>
         );
 
       default:

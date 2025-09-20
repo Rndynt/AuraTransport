@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { tripsApi } from '@/lib/api';
 import { useSeatHold } from '@/hooks/useSeatHold';
+import { Grid3X3, AlertTriangle, RotateCcw, Loader2, Car } from 'lucide-react';
 import type { Trip, SeatmapResponse } from '@/types';
 
 interface SeatMapProps {
@@ -104,9 +105,9 @@ export default function SeatMap({
   if (isLoading) {
     return (
       <Card data-testid="seat-map-loading">
-        <CardContent className="flex items-center justify-center h-64">
+        <CardContent className="flex items-center justify-center h-40">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+            <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
             <p className="text-sm text-muted-foreground mt-2">Loading seat map...</p>
           </div>
         </CardContent>
@@ -117,11 +118,12 @@ export default function SeatMap({
   if (!seatmap) {
     return (
       <Card data-testid="seat-map-error">
-        <CardContent className="flex items-center justify-center h-64">
+        <CardContent className="flex items-center justify-center h-40">
           <div className="text-center">
-            <i className="fas fa-exclamation-triangle text-destructive text-2xl mb-2"></i>
-            <p className="text-muted-foreground">Failed to load seat map</p>
+            <AlertTriangle className="w-8 h-8 text-destructive mx-auto mb-2" />
+            <p className="text-muted-foreground text-sm">Failed to load seat map</p>
             <Button onClick={() => refetch()} className="mt-2" size="sm">
+              <RotateCcw className="w-3 h-3 mr-1" />
               Retry
             </Button>
           </div>
@@ -134,13 +136,13 @@ export default function SeatMap({
 
   return (
     <Card data-testid="seat-map">
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center">
-            <i className="fas fa-th-large mr-2 text-primary"></i>
+          <CardTitle className="flex items-center text-base">
+            <Grid3X3 className="w-4 h-4 mr-2 text-primary" />
             Seat Selection
           </CardTitle>
-          <div className="text-sm text-muted-foreground">
+          <div className="text-xs text-muted-foreground">
             <span data-testid="available-count">{getAvailableCount()}</span> of{' '}
             <span data-testid="total-capacity">{seatMapLayout.length}</span> available
           </div>
@@ -168,9 +170,9 @@ export default function SeatMap({
         </div>
 
         {/* Driver Area */}
-        <div className="text-center mb-4">
-          <div className="inline-flex items-center space-x-2 text-sm text-muted-foreground">
-            <i className="fas fa-steering-wheel"></i>
+        <div className="text-center mb-3">
+          <div className="inline-flex items-center space-x-1 text-xs text-muted-foreground">
+            <Car className="w-3 h-3" />
             <span>Driver</span>
           </div>
         </div>
@@ -203,10 +205,10 @@ export default function SeatMap({
 
         {/* Selected Seats Info */}
         {localSelectedSeats.size > 0 && (
-          <div className="bg-primary/10 border border-primary/20 rounded-lg p-4" data-testid="selected-seats-info">
+          <div className="bg-primary/10 border border-primary/20 rounded-lg p-3" data-testid="selected-seats-info">
             <div className="flex items-center justify-between mb-2">
               <span className="text-sm font-medium">Selected Seats</span>
-              <span className="font-mono text-lg font-bold text-primary">
+              <span className="font-mono text-sm font-bold text-primary">
                 {Array.from(localSelectedSeats).join(', ')}
               </span>
             </div>
@@ -222,14 +224,14 @@ export default function SeatMap({
         )}
 
         {/* Refresh Button */}
-        <div className="mt-4 text-center">
+        <div className="mt-3 text-center">
           <Button 
             onClick={() => refetch()} 
             variant="outline" 
             size="sm"
             data-testid="refresh-availability"
           >
-            <i className="fas fa-sync-alt mr-2"></i>
+            <RotateCcw className="w-3 h-3 mr-1" />
             Refresh Availability
           </Button>
         </div>

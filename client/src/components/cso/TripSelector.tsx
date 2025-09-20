@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { tripsApi, outletsApi } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Store, Calendar, Bus, Info, Loader2 } from 'lucide-react';
 import type { Trip, Outlet } from '@/types';
 
 interface TripSelectorProps {
@@ -35,12 +36,12 @@ export default function TripSelector({
   });
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       {/* Outlet Selection */}
       <Card data-testid="outlet-selector">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <i className="fas fa-store mr-2 text-primary"></i>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-base">
+            <Store className="w-4 h-4 mr-2 text-primary" />
             Select Outlet
           </CardTitle>
         </CardHeader>
@@ -69,9 +70,9 @@ export default function TripSelector({
 
       {/* Date Selection */}
       <Card data-testid="date-selector">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <i className="fas fa-calendar mr-2 text-primary"></i>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-base">
+            <Calendar className="w-4 h-4 mr-2 text-primary" />
             Select Date
           </CardTitle>
         </CardHeader>
@@ -91,29 +92,29 @@ export default function TripSelector({
 
       {/* Trip Selection */}
       <Card data-testid="trip-selector">
-        <CardHeader>
-          <CardTitle className="flex items-center">
-            <i className="fas fa-bus mr-2 text-primary"></i>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center text-base">
+            <Bus className="w-4 h-4 mr-2 text-primary" />
             Available Trips
           </CardTitle>
         </CardHeader>
         <CardContent>
           {tripsLoading ? (
             <div className="text-center py-4">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
               <p className="text-sm text-muted-foreground mt-2">Loading trips...</p>
             </div>
           ) : trips.length === 0 ? (
-            <div className="text-center py-8">
-              <i className="fas fa-info-circle text-muted-foreground text-2xl mb-2"></i>
+            <div className="text-center py-6">
+              <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
               <p className="text-muted-foreground">No trips available for selected date</p>
             </div>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-2">
               {trips.map(trip => (
                 <div
                   key={trip.id}
-                  className={`p-4 border rounded-lg cursor-pointer transition-colors ${
+                  className={`p-3 border rounded-lg cursor-pointer transition-colors ${
                     selectedTrip?.id === trip.id
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'
@@ -122,15 +123,16 @@ export default function TripSelector({
                   data-testid={`trip-${trip.id}`}
                 >
                   <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium">Trip {trip.id.slice(-8)}</p>
-                      <p className="text-sm text-muted-foreground">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-sm">Trip {trip.id.slice(-8)}</p>
+                      <p className="text-xs text-muted-foreground">
                         {trip.capacity} seats • {trip.status}
                       </p>
                     </div>
                     <Button 
                       variant={selectedTrip?.id === trip.id ? "default" : "outline"}
                       size="sm"
+                      className="ml-2 shrink-0"
                       data-testid={`select-trip-${trip.id}`}
                     >
                       {selectedTrip?.id === trip.id ? 'Selected' : 'Select'}
