@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import StopsManager from '@/components/masters/StopsManager';
@@ -10,7 +11,15 @@ import TripsManager from '@/components/masters/TripsManager';
 import PriceRulesManager from '@/components/masters/PriceRulesManager';
 
 export default function MastersPage() {
-  const [activeTab, setActiveTab] = useState('stops');
+  const [location] = useLocation();
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const tabFromUrl = urlParams.get('tab') || 'stops';
+  const [activeTab, setActiveTab] = useState(tabFromUrl);
+  
+  useEffect(() => {
+    const newTab = urlParams.get('tab') || 'stops';
+    setActiveTab(newTab);
+  }, [location]);
 
   const tabs = [
     { id: 'stops', label: 'Stops', icon: 'fas fa-map-marker-alt', component: StopsManager },
@@ -38,7 +47,7 @@ export default function MastersPage() {
       <Card>
         <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
           <div className="border-b border-border px-6">
-            <TabsList className="grid w-full grid-cols-7 h-auto p-0 bg-transparent">
+            <TabsList className="flex flex-wrap lg:grid lg:grid-cols-7 h-auto p-0 bg-transparent overflow-x-auto">
               {tabs.map(tab => (
                 <TabsTrigger
                   key={tab.id}

@@ -149,9 +149,9 @@ export default function PriceRulesManager() {
       tripId: rule.tripId || '',
       legIndex: rule.legIndex?.toString() || '',
       ruleJson: JSON.stringify(rule.rule, null, 2),
-      validFrom: rule.validFrom ? rule.validFrom.split('T')[0] : '',
-      validTo: rule.validTo ? rule.validTo.split('T')[0] : '',
-      priority: rule.priority.toString()
+      validFrom: rule.validFrom ? new Date(rule.validFrom).toISOString().split('T')[0] : '',
+      validTo: rule.validTo ? new Date(rule.validTo).toISOString().split('T')[0] : '',
+      priority: (rule.priority || 0).toString()
     });
     setIsDialogOpen(true);
   };
@@ -168,8 +168,8 @@ export default function PriceRulesManager() {
         tripId: formData.tripId || null,
         legIndex: formData.legIndex ? parseInt(formData.legIndex, 10) : null,
         rule,
-        validFrom: formData.validFrom || null,
-        validTo: formData.validTo || null,
+        validFrom: formData.validFrom ? new Date(formData.validFrom).toISOString() : null,
+        validTo: formData.validTo ? new Date(formData.validTo).toISOString() : null,
         priority: parseInt(formData.priority, 10)
       };
 
@@ -468,11 +468,11 @@ export default function PriceRulesManager() {
                       </TableCell>
                       <TableCell className="text-xs">
                         {rule.validFrom && rule.validTo 
-                          ? `${rule.validFrom.split('T')[0]} to ${rule.validTo.split('T')[0]}`
+                          ? `${new Date(rule.validFrom).toISOString().split('T')[0]} to ${new Date(rule.validTo).toISOString().split('T')[0]}`
                           : rule.validFrom 
-                          ? `From ${rule.validFrom.split('T')[0]}`
+                          ? `From ${new Date(rule.validFrom).toISOString().split('T')[0]}`
                           : rule.validTo 
-                          ? `Until ${rule.validTo.split('T')[0]}`
+                          ? `Until ${new Date(rule.validTo).toISOString().split('T')[0]}`
                           : 'Always active'
                         }
                       </TableCell>

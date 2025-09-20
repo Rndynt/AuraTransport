@@ -199,7 +199,7 @@ export default function LayoutsManager() {
               Add Layout
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-2xl" data-testid="layout-dialog">
+          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="layout-dialog">
             <DialogHeader>
               <DialogTitle>
                 {editingLayout ? 'Edit Layout' : 'Add New Layout'}

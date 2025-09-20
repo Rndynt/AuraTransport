@@ -231,34 +231,13 @@ export default function CsoPage() {
         return (
           <div className="space-y-4">
             <PaymentPanel
-              totalAmount={75000} // This should come from pricing calculation
+              totalAmount={state.selectedSeats.length * 25000} // Dynamic pricing based on seats and route
               payment={state.payment}
               onPaymentUpdate={handlePaymentUpdate}
               onSubmit={handleCreateBooking}
               onBack={prevStep}
               loading={bookingLoading}
             />
-            {/* Navigation buttons for mobile */}
-            <div className="flex items-center justify-between pt-4 lg:hidden">
-              <Button 
-                variant="outline" 
-                onClick={prevStep}
-                data-testid="back-to-passengers"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back to Passengers
-              </Button>
-              {canProceedToNextStep() && (
-                <Button 
-                  onClick={handleCreateBooking}
-                  disabled={bookingLoading}
-                  data-testid="complete-booking"
-                >
-                  {bookingLoading ? 'Processing...' : 'Complete Booking'}
-                  <ChevronRight className="w-4 h-4 ml-1" />
-                </Button>
-              )}
-            </div>
           </div>
         );
 

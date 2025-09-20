@@ -75,22 +75,41 @@
 .seat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  max-width: 200px;
+  gap: 12px;
+  max-width: 280px;
+  width: 100%;
+  margin: 0 auto;
+}
+
+@media (max-width: 640px) {
+  .seat-grid {
+    max-width: 240px;
+    gap: 8px;
+  }
 }
 
 .seat {
-  width: 36px;
-  height: 36px;
+  width: 50px;
+  height: 50px;
   border: 2px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
   transition: all 0.2s ease;
+  position: relative;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+@media (max-width: 640px) {
+  .seat {
+    width: 42px;
+    height: 42px;
+    font-size: 11px;
+  }
 }
 
 .seat.available {

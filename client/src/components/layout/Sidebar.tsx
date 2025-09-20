@@ -7,13 +7,13 @@ const navigationItems = [
   {
     title: "Masters",
     items: [
-      { name: "Stops", path: "/masters", icon: MapPin },
-      { name: "Outlets", path: "/masters", icon: Store },
-      { name: "Vehicles", path: "/masters", icon: Truck },
-      { name: "Layouts", path: "/masters", icon: LayoutGrid },
-      { name: "Trip Patterns", path: "/masters", icon: Route },
-      { name: "Trips", path: "/masters", icon: Calendar },
-      { name: "Price Rules", path: "/masters", icon: DollarSign },
+      { name: "Stops", path: "/masters?tab=stops", icon: MapPin },
+      { name: "Outlets", path: "/masters?tab=outlets", icon: Store },
+      { name: "Vehicles", path: "/masters?tab=vehicles", icon: Truck },
+      { name: "Layouts", path: "/masters?tab=layouts", icon: LayoutGrid },
+      { name: "Trip Patterns", path: "/masters?tab=patterns", icon: Route },
+      { name: "Trips", path: "/masters?tab=trips", icon: Calendar },
+      { name: "Price Rules", path: "/masters?tab=pricing", icon: DollarSign },
     ]
   },
   {
@@ -96,7 +96,9 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
                       <div
                         className={cn(
                           "flex items-center px-2 lg:px-3 py-2 lg:py-2 text-sm rounded-md transition-colors w-full cursor-pointer",
-                          location === item.path
+                          location.startsWith("/masters") && item.path.includes("masters")
+                            ? "bg-primary text-primary-foreground"
+                            : location === item.path
                             ? "bg-primary text-primary-foreground"
                             : "text-foreground hover:bg-muted"
                         )}

@@ -61,10 +61,11 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden"
+                  className="lg:hidden p-2 h-10 w-10 text-foreground hover:bg-muted border border-border"
                   aria-expanded={sidebarOpen}
                   aria-controls="mobile-sidebar"
                   aria-label="Open navigation menu"
+                  data-testid="open-sidebar"
                 >
                   <i className="fas fa-bars text-lg"></i>
                 </Button>

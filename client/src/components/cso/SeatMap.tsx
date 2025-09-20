@@ -150,22 +150,25 @@ export default function SeatMap({
       </CardHeader>
       <CardContent>
         {/* Seat Legend */}
-        <div className="flex items-center space-x-4 mb-4 text-xs" data-testid="seat-legend">
-          <div className="flex items-center space-x-1">
-            <div className="seat available w-4 h-4"></div>
-            <span>Available</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="seat selected w-4 h-4"></div>
-            <span>Selected</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="seat booked w-4 h-4"></div>
-            <span>Booked</span>
-          </div>
-          <div className="flex items-center space-x-1">
-            <div className="seat held w-4 h-4"></div>
-            <span>On Hold</span>
+        <div className="bg-card p-4 rounded-lg border border-border mb-4">
+          <h4 className="text-sm font-semibold mb-3">Seat Legend</h4>
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
+            <div className="flex items-center space-x-2">
+              <div className="seat available w-6 h-6 flex-shrink-0 text-[10px]">A</div>
+              <span className="truncate">Available</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="seat selected w-6 h-6 flex-shrink-0 text-[10px]">S</div>
+              <span className="truncate">Selected</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="seat booked w-6 h-6 flex-shrink-0 text-[10px]">B</div>
+              <span className="truncate">Booked</span>
+            </div>
+            <div className="flex items-center space-x-2">
+              <div className="seat held w-6 h-6 flex-shrink-0 text-[10px]">H</div>
+              <span className="truncate">On Hold</span>
+            </div>
           </div>
         </div>
 
