@@ -11,7 +11,9 @@ const createBookingSchema = z.object({
   destinationStopId: z.string().uuid(),
   originSeq: z.number(),
   destinationSeq: z.number(),
+  totalAmount: z.number().positive(),
   channel: z.enum(['CSO', 'WEB', 'APP', 'OTA']).default('CSO'),
+  currency: z.string().default('IDR'),
   createdBy: z.string().optional(),
   passengers: z.array(z.object({
     fullName: z.string(),
@@ -58,8 +60,14 @@ export class BookingsController {
     
     const { passengers, payment, ...bookingData } = validatedData;
     
+    // Convert totalAmount to string for database storage
+    const bookingDataWithStringAmount = {
+      ...bookingData,
+      totalAmount: bookingData.totalAmount.toString()
+    };
+    
     const result = await this.bookingsService.createBooking(
-      bookingData,
+      bookingDataWithStringAmount,
       passengers,
       payment,
       idempotencyKey
