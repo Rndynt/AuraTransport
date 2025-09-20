@@ -199,3 +199,8 @@ export async function seedData() {
   console.log("✅ Price rule created");
   console.log("🎉 Seed data creation completed!");
 }
+
+// Run the seeder if this file is executed directly
+if (import.meta.url === `file://${process.argv[1]}`) {
+  seedData().catch(console.error);
+}
