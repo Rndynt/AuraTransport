@@ -89,6 +89,11 @@ export function useBookingFlow() {
     }
   }, [state]);
 
+  const calculateTotalAmount = useCallback(() => {
+    // Calculate total based on selected seats - using same logic as PaymentPanel
+    return state.selectedSeats.length * 25000;
+  }, [state.selectedSeats]);
+
   const createBooking = useCallback(async (): Promise<{ booking: any; printPayload: any }> => {
     if (!canProceedToNextStep() || !state.trip || !state.originStop || !state.destinationStop || !state.payment) {
       throw new Error('Booking flow is incomplete');
@@ -96,6 +101,8 @@ export function useBookingFlow() {
 
     setLoading(true);
     try {
+      const totalAmount = calculateTotalAmount();
+      
       const bookingData: CreateBookingRequest = {
         tripId: state.trip.id,
         outletId: state.outlet?.id,
@@ -103,6 +110,7 @@ export function useBookingFlow() {
         destinationStopId: state.destinationStop.id,
         originSeq: state.originSeq!,
         destinationSeq: state.destinationSeq!,
+        totalAmount: totalAmount,
         channel: 'CSO',
         createdBy: 'CSO User',
         passengers: state.passengers.map((passenger, index) => ({
@@ -133,7 +141,7 @@ export function useBookingFlow() {
     } finally {
       setLoading(false);
     }
-  }, [state, canProceedToNextStep, toast]);
+  }, [state, canProceedToNextStep, toast, calculateTotalAmount]);
 
   const resetFlow = useCallback(() => {
     setState({
@@ -157,6 +165,7 @@ export function useBookingFlow() {
     updatePassengers,
     canProceedToNextStep,
     createBooking,
-    resetFlow
+    resetFlow,
+    calculateTotalAmount
   };
 }

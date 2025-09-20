@@ -30,6 +30,7 @@ export default function CsoPage() {
     canProceedToNextStep,
     createBooking,
     resetFlow,
+    calculateTotalAmount,
     loading: bookingLoading
   } = useBookingFlow();
   
@@ -196,42 +197,20 @@ export default function CsoPage() {
 
       case 5:
         return (
-          <div className="space-y-4">
-            <PassengerForm
-              selectedSeats={state.selectedSeats}
-              passengers={state.passengers}
-              onPassengersUpdate={handlePassengersUpdate}
-              onNext={nextStep}
-              onBack={prevStep}
-            />
-            {/* Navigation buttons for mobile */}
-            <div className="flex items-center justify-between pt-4 lg:hidden">
-              <Button 
-                variant="outline" 
-                onClick={prevStep}
-                data-testid="back-to-seats"
-              >
-                <ChevronLeft className="w-4 h-4 mr-1" />
-                Back to Seats
-              </Button>
-              {canProceedToNextStep() && (
-                <Button 
-                  onClick={nextStep}
-                  data-testid="continue-to-payment"
-                >
-                  Continue to Payment
-                  <CreditCard className="w-4 h-4 ml-1" />
-                </Button>
-              )}
-            </div>
-          </div>
+          <PassengerForm
+            selectedSeats={state.selectedSeats}
+            passengers={state.passengers}
+            onPassengersUpdate={handlePassengersUpdate}
+            onNext={nextStep}
+            onBack={prevStep}
+          />
         );
 
       case 6:
         return (
           <div className="space-y-4">
             <PaymentPanel
-              totalAmount={state.selectedSeats.length * 25000} // Dynamic pricing based on seats and route
+              totalAmount={calculateTotalAmount()}
               payment={state.payment}
               onPaymentUpdate={handlePaymentUpdate}
               onSubmit={handleCreateBooking}
@@ -310,11 +289,15 @@ export default function CsoPage() {
                   <span>{state.passengers.length}</span>
                 </div>
 
-                {state.payment && (
+                {state.selectedSeats.length > 0 && (
                   <div className="border-t pt-3 mt-3">
                     <div className="flex justify-between font-semibold">
                       <span>Total:</span>
-                      <span>IDR 75,000</span>
+                      <span>{new Intl.NumberFormat('id-ID', {
+                        style: 'currency',
+                        currency: 'IDR',
+                        minimumFractionDigits: 0
+                      }).format(calculateTotalAmount())}</span>
                     </div>
                   </div>
                 )}
@@ -323,34 +306,12 @@ export default function CsoPage() {
           </Card>
 
           {/* Quick Actions */}
-          {state.currentStep >= 4 && state.currentStep < 7 && (
+          {state.currentStep >= 5 && state.currentStep < 7 && (
             <Card data-testid="quick-actions">
               <CardContent className="pt-6">
                 <h3 className="font-semibold text-foreground mb-4">Quick Actions</h3>
                 
                 <div className="space-y-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full justify-start"
-                    onClick={() => setCurrentStep(4)}
-                    data-testid="back-to-seats"
-                  >
-                    <i className="fas fa-th-large mr-2"></i>
-                    Change Seats
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full justify-start"
-                    onClick={() => setCurrentStep(3)}
-                    data-testid="change-route"
-                  >
-                    <i className="fas fa-route mr-2"></i>
-                    Change Route
-                  </Button>
-                  
                   <Button 
                     variant="outline" 
                     size="sm" 

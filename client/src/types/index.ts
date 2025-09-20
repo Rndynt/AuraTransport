@@ -63,6 +63,7 @@ export interface CreateBookingRequest {
   destinationStopId: string;
   originSeq: number;
   destinationSeq: number;
+  totalAmount: number;
   channel: 'CSO' | 'WEB' | 'APP' | 'OTA';
   createdBy?: string;
   passengers: Array<{
