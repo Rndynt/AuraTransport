@@ -10,17 +10,17 @@ A comprehensive production-grade MVP for a multi-stop bus travel ticketing syste
 - **UI**: Tailwind CSS + shadcn/ui components
 
 ## Recent Changes
-**Date: 2025-09-20**
-- Project imported and configured for Replit environment
-- NPM dependencies installed and verified
+**Date: 2025-09-21**
+- Fresh GitHub import successfully configured for Replit environment
+- Dependencies verified and tsx runtime properly configured
 - PostgreSQL database provisioned and schema applied using `npm run db:push`
-- Database seeded with sample bus route data (Jakarta → Bandung via Purwakarta)
-- Workflow configured to serve on port 5000 with webview output
-- Deployment configuration set up for autoscale target with proper build and start commands
-- Server successfully running on port 5000 with proper host configuration (0.0.0.0)
-- Vite configured with allowedHosts: true for Replit proxy compatibility
-- Database schema pushed successfully and application is fully functional
-- Import process completed successfully
+- Database seeded with comprehensive sample data (Jakarta → Bandung route)
+- Workflow "Server" configured to run `npm run dev` on port 5000 with webview output
+- Express server properly configured with host 0.0.0.0 for Replit proxy compatibility
+- Vite development server configured with `allowedHosts: true` for iframe proxy
+- Deployment configuration updated for autoscale with proper build/start commands
+- Application running successfully with all features functional
+- Import process completed and verified
 
 ## Project Architecture
 - **Client**: `/client` directory with React frontend and Vite configuration
