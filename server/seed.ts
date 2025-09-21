@@ -90,26 +90,32 @@ export async function seedData() {
 
   console.log("✅ Trip pattern created");
 
-  // Create pattern stops
+  // Create pattern stops with pickup-only setup
   await storage.createPatternStop({
     patternId: pattern.id,
     stopId: jakartaStop.id,
     stopSequence: 1,
-    dwellSeconds: 0
+    dwellSeconds: 0,
+    boardingAllowed: true,
+    alightingAllowed: true
   });
 
   await storage.createPatternStop({
     patternId: pattern.id,
     stopId: purwakartaStop.id,
     stopSequence: 2,
-    dwellSeconds: 300 // 5 minutes
+    dwellSeconds: 300, // 5 minutes
+    boardingAllowed: true,
+    alightingAllowed: false // PICKUP-ONLY stop
   });
 
   await storage.createPatternStop({
     patternId: pattern.id,
     stopId: bandungStop.id,
     stopSequence: 3,
-    dwellSeconds: 0
+    dwellSeconds: 0,
+    boardingAllowed: true,
+    alightingAllowed: true
   });
 
   console.log("✅ Pattern stops created");
@@ -128,9 +134,9 @@ export async function seedData() {
 
   console.log("✅ Trip created");
 
-  // Create trip stop times
+  // Create trip stop times with schedule: A12:00 → C13:00 → B14:00
   const baseTime = new Date();
-  baseTime.setHours(10, 0, 0, 0); // 10:00 AM
+  baseTime.setHours(12, 0, 0, 0); // 12:00 PM (noon)
 
   await storage.createTripStopTime({
     tripId: trip.id,
@@ -141,8 +147,8 @@ export async function seedData() {
     dwellSeconds: 0
   });
 
-  const purwakartaArrive = new Date(baseTime.getTime() + 55 * 60 * 1000); // +55 min
-  const purwakartaDepart = new Date(baseTime.getTime() + 60 * 60 * 1000); // +60 min
+  const purwakartaArrive = new Date(baseTime.getTime() + 55 * 60 * 1000); // 12:55 PM
+  const purwakartaDepart = new Date(baseTime.getTime() + 60 * 60 * 1000); // 13:00 PM
 
   await storage.createTripStopTime({
     tripId: trip.id,
@@ -153,7 +159,7 @@ export async function seedData() {
     dwellSeconds: 300
   });
 
-  const bandungArrive = new Date(baseTime.getTime() + 120 * 60 * 1000); // +120 min
+  const bandungArrive = new Date(baseTime.getTime() + 120 * 60 * 1000); // 14:00 PM
 
   await storage.createTripStopTime({
     tripId: trip.id,

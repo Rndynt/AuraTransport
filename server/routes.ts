@@ -192,11 +192,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/trips', asyncHandler(tripsController.create.bind(tripsController)));
   app.put('/api/trips/:id', asyncHandler(tripsController.update.bind(tripsController)));
   app.delete('/api/trips/:id', asyncHandler(tripsController.delete.bind(tripsController)));
-  app.post('/api/trips/:id/derive-legs', asyncHandler(tripsController.deriveLegs.bind(tripsController)));
-  app.post('/api/trips/:id/precompute-seat-inventory', asyncHandler(tripsController.precomputeSeatInventory.bind(tripsController)));
 
   // Trip Stop Times routes
   app.get('/api/trips/:tripId/stop-times', asyncHandler(tripStopTimesController.getByTrip.bind(tripStopTimesController)));
+  app.get('/api/trips/:tripId/stop-times/effective', asyncHandler(tripStopTimesController.getByTripWithEffectiveFlags.bind(tripStopTimesController)));
+  app.post('/api/trips/:tripId/stop-times/bulk-upsert', asyncHandler(tripStopTimesController.bulkUpsert.bind(tripStopTimesController)));
+  app.post('/api/trips/:tripId/derive-legs', asyncHandler(tripStopTimesController.deriveLegs.bind(tripStopTimesController)));
+  app.post('/api/trips/:tripId/precompute-seat-inventory', asyncHandler(tripStopTimesController.precomputeSeatInventory.bind(tripStopTimesController)));
   app.post('/api/trip-stop-times', asyncHandler(tripStopTimesController.create.bind(tripStopTimesController)));
   app.put('/api/trip-stop-times/:id', asyncHandler(tripStopTimesController.update.bind(tripStopTimesController)));
   app.delete('/api/trip-stop-times/:id', asyncHandler(tripStopTimesController.delete.bind(tripStopTimesController)));
