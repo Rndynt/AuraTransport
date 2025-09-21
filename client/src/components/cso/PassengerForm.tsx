@@ -3,7 +3,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useToast } from '@/hooks/use-toast';
+
+interface BookerData {
+  fullName: string;
+  phone?: string | null;
+  idNumber?: string | null;
+}
 
 interface PassengerData {
   fullName: string;
@@ -27,7 +34,14 @@ export default function PassengerForm({
   onNext,
   onBack
 }: PassengerFormProps) {
+  const [bookerData, setBookerData] = useState<BookerData>({
+    fullName: '',
+    phone: '',
+    idNumber: ''
+  });
   const [formData, setFormData] = useState<PassengerData[]>([]);
+  const [sameNameAsBooker, setSameNameAsBooker] = useState(false);
+  const [samePhoneFromSecond, setSamePhoneFromSecond] = useState(false);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -41,6 +55,24 @@ export default function PassengerForm({
     setFormData(initialData);
   }, [selectedSeats, passengers]);
 
+  const handleBookerInputChange = (field: keyof BookerData, value: string) => {
+    setBookerData(current => ({ ...current, [field]: value }));
+    
+    // If same name checkbox is checked, update first passenger
+    if (field === 'fullName' && sameNameAsBooker && formData.length > 0) {
+      handleInputChange(0, 'fullName', value);
+    }
+    
+    // If same phone for second+ passengers, update them
+    if (field === 'phone' && samePhoneFromSecond && formData.length > 1) {
+      setFormData(current => 
+        current.map((passenger, index) => 
+          index > 0 ? { ...passenger, phone: value } : passenger
+        )
+      );
+    }
+  };
+
   const handleInputChange = (index: number, field: keyof PassengerData, value: string) => {
     setFormData(current => {
       const updated = [...current];
@@ -49,9 +81,36 @@ export default function PassengerForm({
     });
   };
 
+  const handleSameNameAsBooker = (checked: boolean) => {
+    setSameNameAsBooker(checked);
+    if (checked && formData.length > 0) {
+      handleInputChange(0, 'fullName', bookerData.fullName);
+    }
+  };
+
+  const handleSamePhoneFromSecond = (checked: boolean) => {
+    setSamePhoneFromSecond(checked);
+    if (checked && formData.length > 1) {
+      setFormData(current =>
+        current.map((passenger, index) =>
+          index > 0 ? { ...passenger, phone: bookerData.phone } : passenger
+        )
+      );
+    }
+  };
+
   const validateForm = () => {
     const errors: string[] = [];
     
+    // Validate booker data
+    if (!bookerData.fullName.trim()) {
+      errors.push('Booker full name is required');
+    }
+    if (bookerData.fullName.length < 2) {
+      errors.push('Booker full name must be at least 2 characters');
+    }
+    
+    // Validate passenger data
     formData.forEach((passenger, index) => {
       if (!passenger.fullName.trim()) {
         errors.push(`Passenger ${index + 1}: Full name is required`);
@@ -114,7 +173,7 @@ export default function PassengerForm({
         <div className="flex items-center justify-between">
           <CardTitle className="flex items-center">
             <i className="fas fa-users mr-2 text-primary"></i>
-            Passenger Details
+            Booking Details
           </CardTitle>
           {formData.length > 1 && (
             <Button 
@@ -131,6 +190,83 @@ export default function PassengerForm({
       </CardHeader>
       <CardContent>
         <div className="space-y-6">
+          {/* Booker Information */}
+          <div className="p-4 border border-primary/20 rounded-lg bg-primary/5" data-testid="booker-form">
+            <div className="flex items-center mb-4">
+              <h4 className="font-semibold text-foreground">
+                <i className="fas fa-user-tie mr-2 text-primary"></i>
+                Booker Information
+              </h4>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="booker-fullName">
+                  Full Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="booker-fullName"
+                  value={bookerData.fullName}
+                  onChange={(e) => handleBookerInputChange('fullName', e.target.value)}
+                  placeholder="Enter booker full name"
+                  data-testid="input-booker-fullname"
+                  required
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="booker-phone">Phone Number</Label>
+                <Input
+                  id="booker-phone"
+                  value={bookerData.phone || ''}
+                  onChange={(e) => handleBookerInputChange('phone', e.target.value)}
+                  placeholder="+62 xxx xxx xxxx"
+                  data-testid="input-booker-phone"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="booker-idNumber">ID Number</Label>
+                <Input
+                  id="booker-idNumber"
+                  value={bookerData.idNumber || ''}
+                  onChange={(e) => handleBookerInputChange('idNumber', e.target.value)}
+                  placeholder="ID/Passport number"
+                  data-testid="input-booker-idnumber"
+                />
+              </div>
+            </div>
+
+            {/* Same name checkbox */}
+            {formData.length > 0 && (
+              <div className="flex items-center space-x-2 mt-4">
+                <Checkbox
+                  id="same-name-booker"
+                  checked={sameNameAsBooker}
+                  onCheckedChange={handleSameNameAsBooker}
+                  data-testid="checkbox-same-name-booker"
+                />
+                <Label htmlFor="same-name-booker" className="text-sm">
+                  Booker name same as first passenger
+                </Label>
+              </div>
+            )}
+          </div>
+
+          {/* Same phone checkbox for 2nd+ passengers */}
+          {formData.length > 1 && (
+            <div className="flex items-center space-x-2 p-3 bg-muted/50 rounded-lg">
+              <Checkbox
+                id="same-phone-second"
+                checked={samePhoneFromSecond}
+                onCheckedChange={handleSamePhoneFromSecond}
+                data-testid="checkbox-same-phone-second"
+              />
+              <Label htmlFor="same-phone-second" className="text-sm">
+                Use booker's phone number for all passengers (except first)
+              </Label>
+            </div>
+          )}
           {formData.map((passenger, index) => (
             <div key={index} className="p-4 border border-border rounded-lg" data-testid={`passenger-${index}`}>
               <div className="flex items-center justify-between mb-4">
