@@ -252,9 +252,10 @@ export default function TripPatternsManager() {
       queryClient.invalidateQueries({ queryKey: ['/api/trip-patterns', selectedPatternForStops.id, 'stops'] });
       
       // CRITICAL: Invalidate all trips' effective stop times since pattern changed
+      queryClient.invalidateQueries({ queryKey: ['/api/trips'] }); // Invalidate all trips
       queryClient.invalidateQueries({ 
         predicate: (query) => {
-          // Invalidate any query that includes 'stop-times' and 'effective'
+          // Invalidate any query that includes 'stop-times' and 'effective' 
           const key = query.queryKey as string[];
           return key.includes('stop-times') && key.includes('effective');
         }
@@ -267,9 +268,20 @@ export default function TripPatternsManager() {
         description: "Pattern stops saved successfully - all affected trips will be refreshed"
       });
     } catch (error) {
+      console.error('Error saving pattern stops:', error);
+      
+      let errorMessage = "Failed to save pattern stops";
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'string') {
+        errorMessage = error;
+      } else if (error && typeof error === 'object' && 'message' in error) {
+        errorMessage = error.message as string;
+      }
+      
       toast({
         title: "Error",
-        description: "Failed to save pattern stops",
+        description: errorMessage,
         variant: "destructive"
       });
     }
