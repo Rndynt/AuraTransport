@@ -81,16 +81,18 @@ export default function PassengerForm({
     });
   };
 
-  const handleSameNameAsBooker = (checked: boolean) => {
-    setSameNameAsBooker(checked);
-    if (checked && formData.length > 0) {
+  const handleSameNameAsBooker = (checked: boolean | "indeterminate") => {
+    const isChecked = !!checked;
+    setSameNameAsBooker(isChecked);
+    if (isChecked && formData.length > 0) {
       handleInputChange(0, 'fullName', bookerData.fullName);
     }
   };
 
-  const handleSamePhoneFromSecond = (checked: boolean) => {
-    setSamePhoneFromSecond(checked);
-    if (checked && formData.length > 1) {
+  const handleSamePhoneFromSecond = (checked: boolean | "indeterminate") => {
+    const isChecked = !!checked;
+    setSamePhoneFromSecond(isChecked);
+    if (isChecked && formData.length > 1) {
       setFormData(current =>
         current.map((passenger, index) =>
           index > 0 ? { ...passenger, phone: bookerData.phone } : passenger

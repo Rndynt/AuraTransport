@@ -205,10 +205,11 @@ export class BookingsService {
     const pendingExpiresAt = new Date(now.getTime() + (config.holdTtlLongSeconds * 1000));
 
     // Create pending booking
+    const expectedTotal = Number(fareQuote.total) * passengers.length;
     const booking = await this.storage.createBooking({
       ...bookingData,
       status: 'pending',
-      totalAmount: fareQuote.total.toString(),
+      totalAmount: expectedTotal.toString(),
       pendingExpiresAt
     });
 
