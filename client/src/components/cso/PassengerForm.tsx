@@ -58,9 +58,9 @@ export default function PassengerForm({
   const handleBookerInputChange = (field: keyof BookerData, value: string) => {
     setBookerData(current => ({ ...current, [field]: value }));
     
-    // If same name checkbox is checked, update first passenger
-    if (field === 'fullName' && sameNameAsBooker && formData.length > 0) {
-      handleInputChange(0, 'fullName', value);
+    // If same data checkbox is checked, update first passenger with all booker data
+    if (sameNameAsBooker && formData.length > 0) {
+      handleInputChange(0, field, value);
     }
     
     // If same phone for second+ passengers, update them
@@ -85,7 +85,17 @@ export default function PassengerForm({
     const isChecked = !!checked;
     setSameNameAsBooker(isChecked);
     if (isChecked && formData.length > 0) {
-      handleInputChange(0, 'fullName', bookerData.fullName);
+      // Copy all booker data to first passenger
+      setFormData(current => {
+        const updated = [...current];
+        updated[0] = {
+          ...updated[0],
+          fullName: bookerData.fullName,
+          phone: bookerData.phone,
+          idNumber: bookerData.idNumber
+        };
+        return updated;
+      });
     }
   };
 
@@ -249,7 +259,7 @@ export default function PassengerForm({
                   data-testid="checkbox-same-name-booker"
                 />
                 <Label htmlFor="same-name-booker" className="text-sm">
-                  Booker name same as first passenger
+                  Booker data same as first passenger
                 </Label>
               </div>
             )}
