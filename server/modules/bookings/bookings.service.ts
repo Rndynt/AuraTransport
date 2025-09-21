@@ -34,6 +34,13 @@ export class BookingsService {
     idempotencyKey?: string
   ): Promise<{ booking: Booking; printPayload: any }> {
     
+    // Validate boarding and alighting rules
+    await this.validateBoardingAlightingRules(
+      bookingData.tripId,
+      bookingData.originSeq,
+      bookingData.destinationSeq
+    );
+    
     // Validate that all required seats are held
     const legIndexes = [];
     for (let i = bookingData.originSeq; i < bookingData.destinationSeq; i++) {
@@ -126,6 +133,41 @@ export class BookingsService {
     const printPayload = await this.printService.generatePrintPayload(booking.id);
 
     return { booking, printPayload };
+  }
+
+  private async validateBoardingAlightingRules(
+    tripId: string,
+    originSeq: number,
+    destinationSeq: number
+  ): Promise<void> {
+    // Get trip stop times with effective flags
+    const stopTimes = await this.storage.getTripStopTimesWithEffectiveFlags(tripId);
+    
+    // Find origin and destination stops
+    const originStop = stopTimes.find(st => st.stopSequence === originSeq);
+    const destinationStop = stopTimes.find(st => st.stopSequence === destinationSeq);
+    
+    if (!originStop) {
+      throw new Error(`Origin stop at sequence ${originSeq} not found`);
+    }
+    
+    if (!destinationStop) {
+      throw new Error(`Destination stop at sequence ${destinationSeq} not found`);
+    }
+    
+    // Check boarding allowed at origin
+    if (!originStop.effectiveBoardingAllowed) {
+      const error = new Error('Boarding not allowed at this stop');
+      (error as any).code = 'boarding-not-allowed';
+      throw error;
+    }
+    
+    // Check alighting allowed at destination
+    if (!destinationStop.effectiveAlightingAllowed) {
+      const error = new Error('Alighting not allowed at this stop');
+      (error as any).code = 'alighting-not-allowed';
+      throw error;
+    }
   }
 
   async createHold(

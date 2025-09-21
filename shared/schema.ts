@@ -87,6 +87,8 @@ export const patternStops = pgTable("pattern_stops", {
   stopId: uuid("stop_id").notNull().references(() => stops.id),
   stopSequence: integer("stop_sequence").notNull(),
   dwellSeconds: integer("dwell_seconds").default(0),
+  boardingAllowed: boolean("boarding_allowed").notNull().default(true),
+  alightingAllowed: boolean("alighting_allowed").notNull().default(true),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
 });
 
@@ -111,7 +113,9 @@ export const tripStopTimes = pgTable("trip_stop_times", {
   stopSequence: integer("stop_sequence").notNull(),
   arriveAt: timestamp("arrive_at", { withTimezone: true }),
   departAt: timestamp("depart_at", { withTimezone: true }),
-  dwellSeconds: integer("dwell_seconds").default(0)
+  dwellSeconds: integer("dwell_seconds").default(0),
+  boardingAllowed: boolean("boarding_allowed"), // null = inherit from pattern
+  alightingAllowed: boolean("alighting_allowed") // null = inherit from pattern
 });
 
 // 9. Trip Legs
@@ -325,6 +329,37 @@ export type TripWithDetails = Trip & {
   vehiclePlate?: string | null;
   scheduleTime?: string | null;
 };
+
+// Extended TripStopTime with effective flags and stop details
+export type TripStopTimeWithEffectiveFlags = TripStopTime & {
+  stopName?: string;
+  stopCode?: string;
+  effectiveBoardingAllowed: boolean;
+  effectiveAlightingAllowed: boolean;
+  legDurationMinutes?: number | null;
+};
+
+// Bulk upsert request for trip stop times
+export type BulkUpsertTripStopTime = {
+  stopId: string;
+  stopSequence: number;
+  arriveAt?: Date | null;
+  departAt?: Date | null;
+  dwellSeconds?: number;
+  boardingAllowed?: boolean | null;
+  alightingAllowed?: boolean | null;
+};
+
+// Validation schema for bulk upsert
+export const bulkUpsertTripStopTimeSchema = z.object({
+  stopId: z.string().uuid(),
+  stopSequence: z.number().int().min(1),
+  arriveAt: z.date().nullable().optional(),
+  departAt: z.date().nullable().optional(),
+  dwellSeconds: z.number().int().min(0).optional().default(0),
+  boardingAllowed: z.boolean().nullable().optional(),
+  alightingAllowed: z.boolean().nullable().optional()
+});
 export type TripStopTime = typeof tripStopTimes.$inferSelect;
 export type TripLeg = typeof tripLegs.$inferSelect;
 export type SeatInventory = typeof seatInventory.$inferSelect;

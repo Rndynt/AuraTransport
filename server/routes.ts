@@ -67,9 +67,11 @@ export interface IStorage {
 
   // Trip Stop Times
   getTripStopTimes(tripId: string): Promise<TripStopTime[]>;
+  getTripStopTimesWithEffectiveFlags(tripId: string): Promise<any[]>;
   createTripStopTime(data: InsertTripStopTime): Promise<TripStopTime>;
   updateTripStopTime(id: string, data: Partial<InsertTripStopTime>): Promise<TripStopTime>;
   deleteTripStopTime(id: string): Promise<void>;
+  bulkUpsertTripStopTimes(tripId: string, stopTimes: any[]): Promise<void>;
 
   // Trip Legs
   getTripLegs(tripId: string): Promise<TripLeg[]>;

@@ -232,6 +232,63 @@ export class DatabaseStorage implements IStorage {
     await db.delete(tripStopTimes).where(eq(tripStopTimes.id, id));
   }
 
+  async getTripStopTimesWithEffectiveFlags(tripId: string): Promise<any[]> {
+    // Get trip stop times with joined stop and pattern stop data to calculate effective flags
+    const result = await db
+      .select({
+        id: tripStopTimes.id,
+        tripId: tripStopTimes.tripId,
+        stopId: tripStopTimes.stopId,
+        stopSequence: tripStopTimes.stopSequence,
+        arriveAt: tripStopTimes.arriveAt,
+        departAt: tripStopTimes.departAt,
+        dwellSeconds: tripStopTimes.dwellSeconds,
+        tripBoardingAllowed: tripStopTimes.boardingAllowed,
+        tripAlightingAllowed: tripStopTimes.alightingAllowed,
+        stopName: stops.name,
+        stopCode: stops.code,
+        patternBoardingAllowed: patternStops.boardingAllowed,
+        patternAlightingAllowed: patternStops.alightingAllowed,
+      })
+      .from(tripStopTimes)
+      .leftJoin(stops, eq(tripStopTimes.stopId, stops.id))
+      .leftJoin(trips, eq(tripStopTimes.tripId, trips.id))
+      .leftJoin(patternStops, and(
+        eq(patternStops.patternId, trips.patternId),
+        eq(patternStops.stopId, tripStopTimes.stopId)
+      ))
+      .where(eq(tripStopTimes.tripId, tripId))
+      .orderBy(tripStopTimes.stopSequence);
+
+    // Calculate effective flags using coalesce logic
+    return result.map(row => ({
+      ...row,
+      effectiveBoardingAllowed: row.tripBoardingAllowed ?? row.patternBoardingAllowed ?? true,
+      effectiveAlightingAllowed: row.tripAlightingAllowed ?? row.patternAlightingAllowed ?? true,
+    }));
+  }
+
+  async bulkUpsertTripStopTimes(tripId: string, stopTimes: any[]): Promise<void> {
+    // Delete existing trip stop times for this trip
+    await db.delete(tripStopTimes).where(eq(tripStopTimes.tripId, tripId));
+    
+    // Insert new stop times
+    if (stopTimes.length > 0) {
+      const insertData = stopTimes.map(st => ({
+        tripId,
+        stopId: st.stopId,
+        stopSequence: st.stopSequence,
+        arriveAt: st.arriveAt,
+        departAt: st.departAt,
+        dwellSeconds: st.dwellSeconds ?? 0,
+        boardingAllowed: st.boardingAllowed,
+        alightingAllowed: st.alightingAllowed,
+      }));
+      
+      await db.insert(tripStopTimes).values(insertData);
+    }
+  }
+
   // Trip Legs
   async getTripLegs(tripId: string): Promise<TripLeg[]> {
     return await db.select().from(tripLegs)
