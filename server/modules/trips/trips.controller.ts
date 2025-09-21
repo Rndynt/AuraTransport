@@ -65,4 +65,16 @@ export class TripsController {
     const seatmap = await this.tripsService.getSeatmap(id, originSeq, destinationSeq);
     res.json(seatmap);
   }
+
+  async getSeatPassengerDetails(req: Request, res: Response) {
+    const { tripId, seatNo } = req.params;
+    const schema = z.object({
+      originSeq: z.coerce.number(),
+      destinationSeq: z.coerce.number()
+    });
+    
+    const { originSeq, destinationSeq } = schema.parse(req.query);
+    const passengerDetails = await this.tripsService.getSeatPassengerDetails(tripId, seatNo, originSeq, destinationSeq);
+    res.json(passengerDetails);
+  }
 }

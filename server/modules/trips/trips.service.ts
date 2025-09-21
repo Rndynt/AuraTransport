@@ -101,4 +101,65 @@ export class TripsService {
       legIndexes
     };
   }
+
+  async getSeatPassengerDetails(tripId: string, seatNo: string, originSeq: number, destinationSeq: number) {
+    // Get required leg indexes for this O-D pair
+    const legIndexes = [];
+    for (let i = originSeq; i < destinationSeq; i++) {
+      legIndexes.push(i);
+    }
+
+    // Check if seat is booked for these legs
+    const inventory = await this.storage.getSeatInventory(tripId, legIndexes);
+    const seatInventory = inventory.filter(inv => inv.seatNo === seatNo && inv.booked);
+    
+    if (seatInventory.length === 0) {
+      return { 
+        error: 'Seat not booked or available for this journey',
+        available: true 
+      };
+    }
+
+    // Find bookings for this trip and seat
+    const allBookings = await this.storage.getBookings(tripId);
+    const seatBookings = [];
+    
+    for (const booking of allBookings) {
+      if (booking.status === 'paid' || booking.status === 'pending') {
+        const passengers = await this.storage.getPassengers(booking.id);
+        const seatPassenger = passengers.find(p => p.seatNo === seatNo);
+        
+        if (seatPassenger && 
+            booking.originSeq <= originSeq && 
+            booking.destinationSeq >= destinationSeq) {
+          const payments = await this.storage.getPayments(booking.id);
+          const originStop = await this.storage.getStopById(booking.originStopId);
+          const destinationStop = await this.storage.getStopById(booking.destinationStopId);
+          
+          seatBookings.push({
+            booking: {
+              ...booking,
+              originStop,
+              destinationStop
+            },
+            passenger: seatPassenger,
+            payments
+          });
+        }
+      }
+    }
+
+    if (seatBookings.length === 0) {
+      return { 
+        error: 'No passenger details found for this seat',
+        available: false 
+      };
+    }
+
+    return {
+      seatNo,
+      bookings: seatBookings,
+      available: false
+    };
+  }
 }

@@ -207,6 +207,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Seat map and availability
   app.get('/api/trips/:id/seatmap', asyncHandler(tripsController.getSeatmap.bind(tripsController)));
+  app.get('/api/trips/:tripId/seats/:seatNo/passenger-details', asyncHandler(tripsController.getSeatPassengerDetails.bind(tripsController)));
 
   // Seat holds
   app.post('/api/holds', asyncHandler(bookingsController.createHold.bind(bookingsController)));

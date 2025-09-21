@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { tripsApi } from '@/lib/api';
 import { useSeatHold } from '@/hooks/useSeatHold';
-import { Grid3X3, AlertTriangle, RotateCcw, Loader2, Car } from 'lucide-react';
+import { Grid3X3, AlertTriangle, RotateCcw, Loader2, Car, Info } from 'lucide-react';
 import type { Trip, SeatmapResponse } from '@/types';
+import PassengerDetailModal from './PassengerDetailModal';
 
 interface SeatMapProps {
   trip: Trip;
@@ -25,6 +26,8 @@ export default function SeatMap({
   onSeatDeselect
 }: SeatMapProps) {
   const [localSelectedSeats, setLocalSelectedSeats] = useState<Set<string>>(new Set());
+  const [showPassengerModal, setShowPassengerModal] = useState(false);
+  const [selectedSeatForDetails, setSelectedSeatForDetails] = useState<string | null>(null);
   const { createHold, releaseHold, getHoldTTL, isHeld } = useSeatHold();
 
   const { data: seatmap, isLoading, refetch } = useQuery({
@@ -32,6 +35,21 @@ export default function SeatMap({
     queryFn: () => tripsApi.getSeatmap(trip.id, originSeq, destinationSeq),
     enabled: !!trip.id && originSeq > 0 && destinationSeq > 0,
     refetchInterval: 30000 // Refresh every 30 seconds
+  });
+
+  const passengerDetailsMutation = useMutation({
+    mutationFn: ({ tripId, seatNo, originSeq, destinationSeq }: {
+      tripId: string;
+      seatNo: string;
+      originSeq: number;
+      destinationSeq: number;
+    }) => tripsApi.getSeatPassengerDetails(tripId, seatNo, originSeq, destinationSeq),
+    onSuccess: (data) => {
+      // Modal will display the data automatically since it's controlled by state
+    },
+    onError: (error) => {
+      console.error('Failed to fetch passenger details:', error);
+    }
   });
 
   useEffect(() => {
@@ -44,8 +62,21 @@ export default function SeatMap({
     const seatAvailability = seatmap.seatAvailability[seatNo];
     const isHeldByMe = isHeld(seatNo);
     
-    // Block only if seat is booked or held by someone else (not by me)
-    if (!seatAvailability.available && !isHeldByMe) {
+    // If seat is booked, show passenger details modal
+    if (!seatAvailability.available && !seatAvailability.held) {
+      setSelectedSeatForDetails(seatNo);
+      setShowPassengerModal(true);
+      passengerDetailsMutation.mutate({
+        tripId: trip.id,
+        seatNo,
+        originSeq,
+        destinationSeq
+      });
+      return;
+    }
+    
+    // Block if seat is held by someone else (not by me)
+    if (!seatAvailability.available && seatAvailability.held && !isHeldByMe) {
       return;
     }
 
@@ -241,6 +272,15 @@ export default function SeatMap({
           </div>
         )}
 
+        {/* Seat Interaction Info */}
+        <div className="bg-muted/50 border border-border rounded-lg p-3 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 mb-1">
+            <Info className="w-3 h-3" />
+            <span className="font-medium">Tip:</span>
+          </div>
+          <p>Klik kursi yang sudah terbooked untuk melihat detail penumpang</p>
+        </div>
+
         {/* Refresh Button */}
         <div className="mt-3 text-center">
           <Button 
@@ -254,6 +294,20 @@ export default function SeatMap({
           </Button>
         </div>
       </CardContent>
+
+      {/* Passenger Detail Modal */}
+      <PassengerDetailModal
+        isOpen={showPassengerModal}
+        onClose={() => {
+          setShowPassengerModal(false);
+          setSelectedSeatForDetails(null);
+          passengerDetailsMutation.reset();
+        }}
+        passengerDetails={passengerDetailsMutation.data}
+        isLoading={passengerDetailsMutation.isPending}
+        isError={passengerDetailsMutation.isError}
+        selectedSeatNo={selectedSeatForDetails}
+      />
     </Card>
   );
 }

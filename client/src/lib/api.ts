@@ -77,7 +77,15 @@ export const tripsApi = {
   bulkUpsertStopTimes: (id: string, data: any[]) => apiRequest('POST', `/api/trips/${id}/stop-times/bulk-upsert`, data).then(res => res.json()),
   getSeatmap: (id: string, originSeq: number, destinationSeq: number) => 
     fetch(`/api/trips/${id}/seatmap?originSeq=${originSeq}&destinationSeq=${destinationSeq}`)
-      .then(res => res.json()) as Promise<SeatmapResponse>
+      .then(res => res.json()) as Promise<SeatmapResponse>,
+  getSeatPassengerDetails: (tripId: string, seatNo: string, originSeq: number, destinationSeq: number) =>
+    fetch(`/api/trips/${tripId}/seats/${seatNo}/passenger-details?originSeq=${originSeq}&destinationSeq=${destinationSeq}`)
+      .then(res => {
+        if (!res.ok) {
+          throw new Error(`Failed to fetch passenger details: ${res.status}`);
+        }
+        return res.json();
+      })
 };
 
 // Trip Stop Times API
