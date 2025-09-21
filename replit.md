@@ -13,6 +13,7 @@ A comprehensive production-grade MVP for a multi-stop bus travel ticketing syste
 **Date: 2025-09-21**
 - Fresh GitHub import successfully configured for Replit environment
 - Dependencies installed and verified (517 packages up to date)
+- Fixed tsx dependency issue by updating package.json script to use `npx tsx`
 - PostgreSQL database provisioned using Replit's built-in database
 - Database configuration verified with standard pg driver
 - Database schema applied successfully using `npm run db:push`
@@ -20,9 +21,9 @@ A comprehensive production-grade MVP for a multi-stop bus travel ticketing syste
 - Workflow "Server" configured to run `npm run dev` on port 5000 with webview output
 - Express server properly configured with host 0.0.0.0 for Replit proxy compatibility
 - Vite development server configured with `allowedHosts: true` for iframe proxy
-- Database connection verified working (200 status codes on API calls)
+- Database connection verified working (200/304 status codes on API calls)
 - Application running successfully with all features functional
-- Deployment configuration set up for autoscale target
+- Deployment configuration set up for autoscale target with proper build and start commands
 - Import process completed and verified successfully
 
 ## Project Architecture
