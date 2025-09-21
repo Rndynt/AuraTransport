@@ -17,8 +17,14 @@ A comprehensive production-grade MVP for a multi-stop bus travel ticketing syste
 - PostgreSQL database provisioned using Replit's built-in database
 - Database configuration verified with standard pg driver
 - Database schema applied successfully using `npm run db:push`
-- Database seeded with comprehensive sample data (Jakarta → Bandung route)
-- Workflow "Server" configured to run `npm run dev` on port 5000 with webview output
+- Fixed duplicate key bug in seeder (changed second Bandung stop from "BDG" to "BDP")
+- Added outlet for Bandung Pasteur stop and corrected phone numbers
+- Database seeded successfully with comprehensive sample data:
+  * 5 stops: Jakarta Terminal, Purwakarta, Bandung Terminal, Bandung Pasteur, Semarang
+  * 4 outlets: Jakarta Terminal, Bandung Terminal, Bandung Pasteur, Semarang
+  * 1 layout (12-seat configuration), 1 vehicle (BUS-001), 1 trip pattern
+  * Complete trip with schedules and seat inventory
+- Workflow "Start application" configured to run `npm run dev` on port 5000 with webview output
 - Express server properly configured with host 0.0.0.0 for Replit proxy compatibility
 - Vite development server configured with `allowedHosts: true` for iframe proxy
 - Database connection verified working (200/304 status codes on API calls)

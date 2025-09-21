@@ -27,6 +27,8 @@ interface StopSequenceItem {
   stopId: string;
   stopSequence: number;
   dwellSeconds: number;
+  boardingAllowed?: boolean;
+  alightingAllowed?: boolean;
 }
 
 export default function TripPatternsManager() {
@@ -161,7 +163,7 @@ export default function TripPatternsManager() {
       name: pattern.name,
       vehicleClass: pattern.vehicleClass || '',
       defaultLayoutId: pattern.defaultLayoutId || '',
-      active: pattern.active,
+      active: pattern.active !== false,
       tags: pattern.tags ? pattern.tags.join(', ') : ''
     });
     setIsDialogOpen(true);
@@ -201,7 +203,9 @@ export default function TripPatternsManager() {
       const stopItems = stops.map(stop => ({
         stopId: stop.stopId,
         stopSequence: stop.stopSequence,
-        dwellSeconds: stop.dwellSeconds
+        dwellSeconds: stop.dwellSeconds || 0,
+        boardingAllowed: stop.boardingAllowed,
+        alightingAllowed: stop.alightingAllowed
       }));
       setPatternStops(stopItems);
     });
@@ -212,7 +216,9 @@ export default function TripPatternsManager() {
     setPatternStops(prev => [...prev, {
       stopId: '',
       stopSequence: nextSequence,
-      dwellSeconds: 0
+      dwellSeconds: 0,
+      boardingAllowed: true,
+      alightingAllowed: true
     }]);
   };
 
@@ -237,7 +243,9 @@ export default function TripPatternsManager() {
             patternId: selectedPatternForStops.id,
             stopId: stop.stopId,
             stopSequence: stop.stopSequence,
-            dwellSeconds: stop.dwellSeconds
+            dwellSeconds: stop.dwellSeconds,
+            boardingAllowed: stop.boardingAllowed !== false,
+            alightingAllowed: stop.alightingAllowed !== false
           });
         }
       }
@@ -399,44 +407,74 @@ export default function TripPatternsManager() {
             </div>
             
             {patternStops.map((stop, index) => (
-              <div key={index} className="flex items-center space-x-2 p-3 border rounded-lg">
-                <div className="w-12 text-center font-mono font-bold">
-                  {stop.stopSequence}
-                </div>
-                <div className="flex-1">
-                  <Select 
-                    value={stop.stopId} 
-                    onValueChange={(value) => updatePatternStop(index, 'stopId', value)}
+              <div key={index} className="flex flex-col space-y-2 p-3 border rounded-lg">
+                <div className="flex items-center space-x-2">
+                  <div className="w-12 text-center font-mono font-bold">
+                    {stop.stopSequence}
+                  </div>
+                  <div className="flex-1">
+                    <Select 
+                      value={stop.stopId} 
+                      onValueChange={(value) => updatePatternStop(index, 'stopId', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select stop" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {stops.map(stopOption => (
+                          <SelectItem key={stopOption.id} value={stopOption.id}>
+                            {stopOption.name} ({stopOption.code})
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="w-32">
+                    <Input
+                      type="number"
+                      value={stop.dwellSeconds}
+                      onChange={(e) => updatePatternStop(index, 'dwellSeconds', parseInt(e.target.value, 10) || 0)}
+                      placeholder="Dwell (sec)"
+                      min="0"
+                    />
+                  </div>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => removePatternStop(index)}
+                    data-testid={`remove-stop-${index}`}
                   >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Select stop" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {stops.map(stopOption => (
-                        <SelectItem key={stopOption.id} value={stopOption.id}>
-                          {stopOption.name} ({stopOption.code})
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                    <i className="fas fa-trash text-destructive"></i>
+                  </Button>
                 </div>
-                <div className="w-32">
-                  <Input
-                    type="number"
-                    value={stop.dwellSeconds}
-                    onChange={(e) => updatePatternStop(index, 'dwellSeconds', parseInt(e.target.value, 10) || 0)}
-                    placeholder="Dwell (sec)"
-                    min="0"
-                  />
+                <div className="flex items-center space-x-6 ml-14">
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`boarding-${index}`}
+                      checked={stop.boardingAllowed !== false}
+                      onChange={(e) => updatePatternStop(index, 'boardingAllowed', e.target.checked)}
+                      className="rounded border-input"
+                      data-testid={`checkbox-boarding-${index}`}
+                    />
+                    <label htmlFor={`boarding-${index}`} className="text-sm font-medium">
+                      Allow Pickup (Boarding)
+                    </label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <input
+                      type="checkbox"
+                      id={`alighting-${index}`}
+                      checked={stop.alightingAllowed !== false}
+                      onChange={(e) => updatePatternStop(index, 'alightingAllowed', e.target.checked)}
+                      className="rounded border-input"
+                      data-testid={`checkbox-alighting-${index}`}
+                    />
+                    <label htmlFor={`alighting-${index}`} className="text-sm font-medium">
+                      Allow Drop (Alighting)
+                    </label>
+                  </div>
                 </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => removePatternStop(index)}
-                  data-testid={`remove-stop-${index}`}
-                >
-                  <i className="fas fa-trash text-destructive"></i>
-                </Button>
               </div>
             ))}
 

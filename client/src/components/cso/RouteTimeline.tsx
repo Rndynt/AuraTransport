@@ -21,8 +21,8 @@ export default function RouteTimeline({
   onDestinationSelect
 }: RouteTimelineProps) {
   const { data: stopTimes = [] } = useQuery({
-    queryKey: ['/api/trips', trip.id, 'stop-times'],
-    queryFn: () => tripsApi.getStopTimes(trip.id),
+    queryKey: ['/api/trips', trip.id, 'stop-times', 'effective'],
+    queryFn: () => tripsApi.getStopTimesWithEffectiveFlags(trip.id),
     enabled: !!trip.id
   });
 
@@ -64,13 +64,17 @@ export default function RouteTimeline({
             <div className="absolute left-4 top-6 bottom-6 w-0.5 bg-border"></div>
             
             {stopTimes
-              .sort((a, b) => a.stopSequence - b.stopSequence)
-              .map((stopTime, index) => {
+              .sort((a: any, b: any) => a.stopSequence - b.stopSequence)
+              .map((stopTime: any, index: number) => {
                 const stop = getStopById(stopTime.stopId);
                 if (!stop) return null;
 
                 const isOrigin = selectedOrigin?.id === stop.id;
                 const isDestination = selectedDestination?.id === stop.id;
+                
+                // Check effective flags for boarding and alighting
+                const canBoard = stopTime.effectiveBoardingAllowed !== false;
+                const canAlight = stopTime.effectiveAlightingAllowed !== false;
 
                 return (
                   <div key={stopTime.id} className="relative flex items-center space-x-3 pb-3">
@@ -106,26 +110,34 @@ export default function RouteTimeline({
                       </div>
                       <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                         {index < stopTimes.length - 1 && (
-                          <Button
-                            size="sm"
-                            variant={isOrigin ? "default" : "outline"}
-                            onClick={() => onOriginSelect(stop, stopTime.stopSequence)}
-                            data-testid={`origin-${stop.code}`}
-                            className="text-xs px-2 py-1 h-auto"
-                          >
-                            Origin
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              size="sm"
+                              variant={isOrigin ? "default" : "outline"}
+                              onClick={() => canBoard ? onOriginSelect(stop, stopTime.stopSequence) : null}
+                              data-testid={`origin-${stop.code}`}
+                              className={`text-xs px-2 py-1 h-auto ${!canBoard ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={!canBoard}
+                              title={!canBoard ? "No pickup at this stop" : "Select as origin"}
+                            >
+                              Origin
+                            </Button>
+                          </div>
                         )}
                         {index > 0 && (
-                          <Button
-                            size="sm"
-                            variant={isDestination ? "default" : "outline"}
-                            onClick={() => onDestinationSelect(stop, stopTime.stopSequence)}
-                            data-testid={`destination-${stop.code}`}
-                            className="text-xs px-2 py-1 h-auto"
-                          >
-                            Destination
-                          </Button>
+                          <div className="relative">
+                            <Button
+                              size="sm"
+                              variant={isDestination ? "default" : "outline"}
+                              onClick={() => canAlight ? onDestinationSelect(stop, stopTime.stopSequence) : null}
+                              data-testid={`destination-${stop.code}`}
+                              className={`text-xs px-2 py-1 h-auto ${!canAlight ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              disabled={!canAlight}
+                              title={!canAlight ? "No drop at this stop" : "Select as destination"}
+                            >
+                              Destination
+                            </Button>
+                          </div>
                         )}
                       </div>
                     </div>

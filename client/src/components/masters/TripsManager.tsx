@@ -6,6 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/hooks/use-toast';
@@ -24,7 +25,9 @@ interface TripFormData {
 
 export default function TripsManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isSchedulingDialogOpen, setIsSchedulingDialogOpen] = useState(false);
   const [editingTrip, setEditingTrip] = useState<Trip | null>(null);
+  const [schedulingTrip, setSchedulingTrip] = useState<Trip | null>(null);
   const [formData, setFormData] = useState<TripFormData>({
     patternId: '',
     serviceDate: new Date().toISOString().split('T')[0],
@@ -206,6 +209,11 @@ export default function TripsManager() {
 
   const handlePrecomputeInventory = (tripId: string) => {
     precomputeSeatInventoryMutation.mutate(tripId);
+  };
+
+  const handleScheduling = (trip: Trip) => {
+    setSchedulingTrip(trip);
+    setIsSchedulingDialogOpen(true);
   };
 
   const getPatternName = (patternId: string) => {
@@ -423,6 +431,15 @@ export default function TripsManager() {
                           <Button
                             size="sm"
                             variant="ghost"
+                            onClick={() => handleScheduling(trip)}
+                            title="Manage Schedule"
+                            data-testid={`scheduling-${trip.id}`}
+                          >
+                            <i className="fas fa-clock text-primary"></i>
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
                             onClick={() => handleDeriveLegs(trip.id)}
                             disabled={deriveLegsMutation.isPending}
                             title="Derive Legs"
@@ -469,6 +486,56 @@ export default function TripsManager() {
           )}
         </CardContent>
       </Card>
+
+      {/* Scheduling Dialog */}
+      <Dialog open={isSchedulingDialogOpen} onOpenChange={setIsSchedulingDialogOpen}>
+        <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto" data-testid="scheduling-dialog">
+          <DialogHeader>
+            <DialogTitle>
+              Manage Schedule - {schedulingTrip && getPatternName(schedulingTrip.patternId)}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="space-y-6">
+            {schedulingTrip && (
+              <div className="bg-accent/10 border border-accent/20 rounded-lg p-4">
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Service Date:</span>
+                    <span className="ml-2">{schedulingTrip.serviceDate}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Vehicle:</span>
+                    <span className="ml-2">{getVehicleName(schedulingTrip.vehicleId)}</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Capacity:</span>
+                    <span className="ml-2">{schedulingTrip.capacity} seats</span>
+                  </div>
+                  <div>
+                    <span className="font-medium">Status:</span>
+                    <span className="ml-2">{getStatusBadge(schedulingTrip.status || 'scheduled')}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="text-center text-muted-foreground">
+              <p>Scheduling interface will be implemented here</p>
+              <p className="text-sm">This will include stop times editor with arrive/depart times and effective flags</p>
+            </div>
+
+            <div className="flex justify-end space-x-2">
+              <Button
+                variant="outline"
+                onClick={() => setIsSchedulingDialogOpen(false)}
+              >
+                Close
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
