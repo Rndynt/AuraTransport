@@ -11,25 +11,21 @@ A comprehensive production-grade MVP for a multi-stop bus travel ticketing syste
 
 ## Recent Changes
 **Date: 2025-09-21**
-- Fresh GitHub import successfully configured for Replit environment
-- Dependencies installed and verified (517 packages up to date)
-- Fixed tsx dependency issue by updating package.json script to use `npx tsx`
-- PostgreSQL database provisioned using Replit's built-in database
-- Database configuration verified with standard pg driver
+- Fresh GitHub import reconfigured for Replit environment
+- Updated browserslist database to latest version (1.0.30001743)
+- PostgreSQL database environment verified and connected
 - Database schema applied successfully using `npm run db:push`
-- Fixed duplicate key bug in seeder (changed second Bandung stop from "BDG" to "BDP")
-- Added outlet for Bandung Pasteur stop and corrected phone numbers
-- Database seeded successfully with comprehensive sample data:
+- Database seeded with comprehensive sample data via `curl -X POST /api/seed`:
   * 5 stops: Jakarta Terminal, Purwakarta, Bandung Terminal, Bandung Pasteur, Semarang
   * 4 outlets: Jakarta Terminal, Bandung Terminal, Bandung Pasteur, Semarang
   * 1 layout (12-seat configuration), 1 vehicle (BUS-001), 1 trip pattern
   * Complete trip with schedules and seat inventory
 - Workflow "Start application" configured to run `npm run dev` on port 5000 with webview output
 - Express server properly configured with host 0.0.0.0 for Replit proxy compatibility
-- Vite development server configured with `allowedHosts: true` for iframe proxy
+- Vite development server pre-configured with `allowedHosts: true` for iframe proxy
 - Database connection verified working (200/304 status codes on API calls)
 - Application running successfully with all features functional
-- Deployment configuration set up for autoscale target with proper build and start commands
+- Deployment configuration set up for autoscale target with `npm run build` and `npm run start`
 - Import process completed and verified successfully
 
 ## Project Architecture
