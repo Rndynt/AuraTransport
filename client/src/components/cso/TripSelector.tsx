@@ -7,13 +7,13 @@ import { Label } from '@/components/ui/label';
 import { tripsApi, outletsApi } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Store, Calendar, Bus, Info, Loader2 } from 'lucide-react';
-import type { Trip, Outlet } from '@/types';
+import type { Trip, TripWithDetails, Outlet } from '@/types';
 
 interface TripSelectorProps {
   selectedOutlet?: Outlet;
-  selectedTrip?: Trip;
+  selectedTrip?: TripWithDetails;
   onOutletSelect: (outlet: Outlet) => void;
-  onTripSelect: (trip: Trip) => void;
+  onTripSelect: (trip: TripWithDetails) => void;
 }
 
 export default function TripSelector({ 
@@ -125,14 +125,14 @@ export default function TripSelector({
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm">
-                        Route {trip.patternId?.slice(-8)}
+                        {trip.patternName || `Route ${trip.patternCode || 'Unknown'}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        Service Date: {trip.serviceDate} • 
+                        {trip.scheduleTime ? new Date(trip.scheduleTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'No schedule'} • 
                         {trip.capacity} seats • {trip.status}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Vehicle ID: {trip.vehicleId?.slice(-8)}
+                        Vehicle: {trip.vehicleCode || 'Unknown'}
                       </p>
                     </div>
                     <Button 

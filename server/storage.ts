@@ -4,7 +4,7 @@ import {
   trips, tripStopTimes, tripLegs, seatInventory, priceRules, 
   bookings, passengers, payments, printJobs,
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
-  type PatternStop, type Trip, type TripStopTime, type TripLeg, 
+  type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
   type SeatInventory, type PriceRule, type Booking, type Passenger, 
   type Payment, type PrintJob,
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
@@ -159,8 +159,33 @@ export class DatabaseStorage implements IStorage {
   }
 
   // Trips
-  async getTrips(serviceDate?: string): Promise<Trip[]> {
-    const query = db.select().from(trips);
+  async getTrips(serviceDate?: string): Promise<TripWithDetails[]> {
+    const query = db.select({
+      id: trips.id,
+      patternId: trips.patternId,
+      serviceDate: trips.serviceDate,
+      vehicleId: trips.vehicleId,
+      layoutId: trips.layoutId,
+      capacity: trips.capacity,
+      status: trips.status,
+      channelFlags: trips.channelFlags,
+      createdAt: trips.createdAt,
+      // Joined fields
+      patternName: tripPatterns.name,
+      patternCode: tripPatterns.code,
+      vehicleCode: vehicles.code,
+      vehiclePlate: vehicles.plate,
+      // Get earliest departure time as schedule time
+      scheduleTime: sql<string>`(
+        SELECT MIN(depart_at) 
+        FROM ${tripStopTimes} 
+        WHERE ${tripStopTimes.tripId} = ${trips.id}
+      )`.as('scheduleTime')
+    })
+    .from(trips)
+    .leftJoin(tripPatterns, eq(trips.patternId, tripPatterns.id))
+    .leftJoin(vehicles, eq(trips.vehicleId, vehicles.id));
+    
     if (serviceDate) {
       return await query.where(eq(trips.serviceDate, serviceDate)).orderBy(trips.serviceDate);
     }

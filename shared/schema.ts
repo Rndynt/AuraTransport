@@ -317,6 +317,14 @@ export type Vehicle = typeof vehicles.$inferSelect;
 export type TripPattern = typeof tripPatterns.$inferSelect;
 export type PatternStop = typeof patternStops.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
+// Extended Trip type with joined data for display
+export type TripWithDetails = Trip & {
+  patternName?: string;
+  patternCode?: string;
+  vehicleCode?: string;
+  vehiclePlate?: string;
+  scheduleTime?: string;
+};
 export type TripStopTime = typeof tripStopTimes.$inferSelect;
 export type TripLeg = typeof tripLegs.$inferSelect;
 export type SeatInventory = typeof seatInventory.$inferSelect;

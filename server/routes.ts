@@ -7,7 +7,7 @@ import {
   insertTripStopTimeSchema, insertPriceRuleSchema, insertBookingSchema,
   insertPassengerSchema, insertPaymentSchema,
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
-  type PatternStop, type Trip, type TripStopTime, type TripLeg, 
+  type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
   type SeatInventory, type PriceRule, type Booking, type Passenger, 
   type Payment, type PrintJob,
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
@@ -59,7 +59,7 @@ export interface IStorage {
   deletePatternStop(id: string): Promise<void>;
 
   // Trips
-  getTrips(serviceDate?: string): Promise<Trip[]>;
+  getTrips(serviceDate?: string): Promise<TripWithDetails[]>;
   getTripById(id: string): Promise<Trip | undefined>;
   createTrip(data: InsertTrip): Promise<Trip>;
   updateTrip(id: string, data: Partial<InsertTrip>): Promise<Trip>;

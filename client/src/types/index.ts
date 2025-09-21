@@ -1,12 +1,12 @@
 import { 
   Stop, Outlet, Vehicle, Layout, TripPattern, PatternStop, 
-  Trip, TripStopTime, TripLeg, SeatInventory, PriceRule, 
+  Trip, TripWithDetails, TripStopTime, TripLeg, SeatInventory, PriceRule, 
   Booking, Passenger, Payment, PrintJob 
 } from "@shared/schema";
 
 export type {
   Stop, Outlet, Vehicle, Layout, TripPattern, PatternStop,
-  Trip, TripStopTime, TripLeg, SeatInventory, PriceRule,
+  Trip, TripWithDetails, TripStopTime, TripLeg, SeatInventory, PriceRule,
   Booking, Passenger, Payment, PrintJob
 };
 
