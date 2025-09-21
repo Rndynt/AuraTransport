@@ -61,14 +61,18 @@ export default function TripsManager() {
 
   const createMutation = useMutation({
     mutationFn: tripsApi.create,
-    onSuccess: () => {
+    onSuccess: (createdTrip) => {
       queryClient.invalidateQueries({ queryKey: ['/api/trips'] });
       setIsDialogOpen(false);
       resetForm();
       toast({
         title: "Success",
-        description: "Trip created successfully"
+        description: "Trip created successfully. Now set up the schedule."
       });
+      
+      // Immediately open the scheduling dialog for the new trip
+      setSchedulingTrip(createdTrip);
+      setIsSchedulingDialogOpen(true);
     },
     onError: (error) => {
       toast({
@@ -220,6 +224,26 @@ export default function TripsManager() {
   const getPatternName = (patternId: string) => {
     const pattern = patterns.find(p => p.id === patternId);
     return pattern ? `${pattern.name} (${pattern.code})` : 'Unknown Pattern';
+  };
+
+  const getScheduleDisplay = (trip: any) => {
+    // For now, we'll extract schedule info from the existing scheduleTime field
+    // In a real implementation, this would come from the TripWithDetails type
+    if (trip.scheduleTime) {
+      const departTime = new Date(trip.scheduleTime).toLocaleTimeString('en-US', { 
+        hour: '2-digit', 
+        minute: '2-digit' 
+      });
+      return `Departs: ${departTime}`;
+    }
+    return 'Schedule not set';
+  };
+
+  const getPatternPath = (patternId: string) => {
+    // This would ideally come from pattern stops data
+    // For now, we'll show pattern name as a placeholder
+    const pattern = patterns.find(p => p.id === patternId);
+    return pattern ? pattern.name : 'Unknown Route';
   };
 
   const getVehicleName = (vehicleId: string) => {
@@ -403,7 +427,7 @@ export default function TripsManager() {
               <TableHeader>
                 <TableRow>
                   <TableHead>ID</TableHead>
-                  <TableHead>Pattern</TableHead>
+                  <TableHead>Route & Schedule</TableHead>
                   <TableHead>Service Date</TableHead>
                   <TableHead>Vehicle</TableHead>
                   <TableHead>Capacity</TableHead>
@@ -422,7 +446,14 @@ export default function TripsManager() {
                   trips.map(trip => (
                     <TableRow key={trip.id} data-testid={`trip-row-${trip.id}`}>
                       <TableCell className="font-mono text-xs">{trip.id.slice(-8)}</TableCell>
-                      <TableCell>{getPatternName(trip.patternId)}</TableCell>
+                      <TableCell>
+                        <div className="space-y-1">
+                          <div className="font-medium">{getPatternPath(trip.patternId)}</div>
+                          <div className="text-sm text-muted-foreground">
+                            {getScheduleDisplay(trip)}
+                          </div>
+                        </div>
+                      </TableCell>
                       <TableCell>{trip.serviceDate}</TableCell>
                       <TableCell>{getVehicleName(trip.vehicleId)}</TableCell>
                       <TableCell>{trip.capacity} seats</TableCell>

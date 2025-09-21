@@ -31,6 +31,7 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
   const [stopTimes, setStopTimes] = useState<StopTimeFormData[]>([]);
   const [hasBookings, setHasBookings] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [backendErrors, setBackendErrors] = useState<Array<{ stopSequence: number; field: string; message: string }>>([]);
   const { toast } = useToast();
 
   // Fetch stop times with effective flags
@@ -51,24 +52,61 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
   });
 
   const bulkUpsertMutation = useMutation({
-    mutationFn: (data: { tripId: string; stopTimes: any[] }) => 
-      tripsApi.bulkUpsertStopTimes(data.tripId, data.stopTimes),
-    onSuccess: () => {
+    mutationFn: async (data: { tripId: string; stopTimes: any[]; precompute?: boolean }) => {
+      const url = `/api/trips/${data.tripId}/stop-times/bulk-upsert${data.precompute ? '?precompute=true' : ''}`;
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data.stopTimes)
+      });
+      
+      const responseData = await response.json();
+      
+      if (!response.ok) {
+        // Create error object with response data for proper handling
+        const error = new Error(`HTTP ${response.status}`);
+        (error as any).responseData = responseData;
+        throw error;
+      }
+      
+      return responseData;
+    },
+    onSuccess: (data, variables) => {
+      // Clear backend errors on success
+      setBackendErrors([]);
+      
       // Invalidate all related queries with consistent key pattern
       queryClient.invalidateQueries({ queryKey: ['/api/trips', trip.id, 'stop-times'] });
       queryClient.invalidateQueries({ queryKey: ['/api/trips', trip.id, 'stop-times', 'effective'] });
       queryClient.invalidateQueries({ queryKey: ['/api/trips'] }); // Refresh trip list
+      
+      const message = variables.precompute 
+        ? "Schedule saved and inventory precomputed successfully"
+        : "Schedule updated successfully";
+      
       toast({
         title: "Success",
-        description: "Schedule updated successfully"
+        description: message
       });
     },
     onError: (error: any) => {
-      toast({
-        title: "Error", 
-        description: error.response?.data?.error || "Failed to update schedule",
-        variant: "destructive"
-      });
+      setBackendErrors([]);
+      
+      // Check if this is a backend validation error with detailed errors
+      if (error.responseData?.code === 'invalid-stop-times' && error.responseData?.errors) {
+        setBackendErrors(error.responseData.errors);
+        toast({
+          title: "Validation Error",
+          description: "Please fix the highlighted issues with stop times",
+          variant: "destructive"
+        });
+      } else {
+        toast({
+          title: "Error", 
+          description: error.responseData?.error || error.message || "Failed to update schedule",
+          variant: "destructive"
+        });
+      }
     }
   });
 
@@ -198,7 +236,7 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
     return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
-  const handleSave = () => {
+  const handleSave = (precompute = false) => {
     if (!validateTimes()) return;
 
     const bulkData = stopTimes.map(st => ({
@@ -213,8 +251,13 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
 
     bulkUpsertMutation.mutate({
       tripId: trip.id,
-      stopTimes: bulkData
+      stopTimes: bulkData,
+      precompute
     });
+  };
+
+  const handleSaveAndBuild = () => {
+    handleSave(true);
   };
 
   const getStopInfo = (stopId: string) => {
@@ -248,9 +291,28 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
       {validationErrors.length > 0 && (
         <Alert variant="destructive">
           <AlertDescription>
+            <div className="font-medium mb-2">Frontend Validation Errors:</div>
             <ul className="list-disc list-inside">
               {validationErrors.map((error, i) => (
                 <li key={i}>{error}</li>
+              ))}
+            </ul>
+          </AlertDescription>
+        </Alert>
+      )}
+
+      {backendErrors.length > 0 && (
+        <Alert variant="destructive">
+          <AlertDescription>
+            <div className="font-medium mb-2">Validation Errors:</div>
+            <ul className="list-disc list-inside">
+              {backendErrors.map((error, i) => (
+                <li key={i}>
+                  <Badge variant="outline" className="mr-2">
+                    Stop #{error.stopSequence}
+                  </Badge>
+                  {error.field}: {error.message}
+                </li>
               ))}
             </ul>
           </AlertDescription>
@@ -373,17 +435,21 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
           <Button
             variant="outline"
             onClick={() => deriveLegsMutation.mutate(trip.id)}
-            disabled={deriveLegsMutation.isPending}
+            disabled={deriveLegsMutation.isPending || validationErrors.length > 0}
+            title="Derive legs from current schedule (requires valid times)"
             data-testid="derive-legs-button"
           >
+            <i className="fas fa-route mr-2"></i>
             Derive Legs
           </Button>
           <Button
             variant="outline" 
             onClick={() => precomputeSeatInventoryMutation.mutate(trip.id)}
             disabled={precomputeSeatInventoryMutation.isPending}
+            title="Precompute seat inventory (requires legs to exist)"
             data-testid="precompute-inventory-button"
           >
+            <i className="fas fa-th-large mr-2"></i>
             Precompute Inventory
           </Button>
         </div>
@@ -393,11 +459,19 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
             Close
           </Button>
           <Button 
-            onClick={handleSave}
+            onClick={() => handleSave(false)}
             disabled={bulkUpsertMutation.isPending || validationErrors.length > 0}
+            variant="outline"
             data-testid="save-schedule-button"
           >
             {bulkUpsertMutation.isPending ? 'Saving...' : 'Save Schedule'}
+          </Button>
+          <Button 
+            onClick={handleSaveAndBuild}
+            disabled={bulkUpsertMutation.isPending || validationErrors.length > 0}
+            data-testid="save-and-build-button"
+          >
+            {bulkUpsertMutation.isPending ? 'Building...' : 'Save & Build (Legs + Inventory)'}
           </Button>
         </div>
       </div>
