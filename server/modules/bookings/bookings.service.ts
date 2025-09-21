@@ -71,8 +71,8 @@ export class BookingsService {
       bookingData.destinationSeq
     );
 
-    // Validate payment amount matches fare quote
-    const expectedTotal = Number(fareQuote.total);
+    // Validate payment amount matches fare quote (multiply by number of passengers)
+    const expectedTotal = Number(fareQuote.total) * passengers.length;
     const paymentAmount = Number(payment.amount);
     if (Math.abs(paymentAmount - expectedTotal) > 0.01) {
       throw new Error(`Payment amount ${paymentAmount} does not match expected total ${expectedTotal}`);
@@ -81,7 +81,7 @@ export class BookingsService {
     // Create booking in transaction
     const booking = await this.storage.createBooking({
       ...bookingData,
-      totalAmount: fareQuote.total.toString()
+      totalAmount: expectedTotal.toString()
     });
 
     // Create passengers
