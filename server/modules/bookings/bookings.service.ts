@@ -19,12 +19,38 @@ export class BookingsService {
     return await this.storage.getBookings(tripId);
   }
 
-  async getBookingById(id: string): Promise<Booking> {
+  async getBookingById(id: string): Promise<Booking & { passengers?: any[]; payments?: any[]; tripDetails?: any; originStop?: any; destinationStop?: any }> {
     const booking = await this.storage.getBookingById(id);
     if (!booking) {
       throw new Error(`Booking with id ${id} not found`);
     }
-    return booking;
+    
+    // Fetch all related data in parallel for better performance
+    const [passengers, payments, trip] = await Promise.all([
+      this.storage.getPassengers(booking.id),
+      this.storage.getPayments(booking.id),
+      this.storage.getTripById(booking.tripId)
+    ]);
+    
+    // Fetch stop details in parallel if origin/destination stop IDs exist
+    let originStop = null;
+    let destinationStop = null;
+    
+    if (booking.originStopId && booking.destinationStopId) {
+      [originStop, destinationStop] = await Promise.all([
+        this.storage.getStopById(booking.originStopId),
+        this.storage.getStopById(booking.destinationStopId)
+      ]);
+    }
+    
+    return {
+      ...booking,
+      passengers: passengers || [],
+      payments: payments || [],
+      tripDetails: trip,
+      originStop,
+      destinationStop
+    };
   }
 
   async createBooking(
