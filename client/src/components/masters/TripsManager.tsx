@@ -13,6 +13,7 @@ import { useToast } from '@/hooks/use-toast';
 import { tripsApi, tripPatternsApi, vehiclesApi, layoutsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
 import type { Trip, TripPattern, Vehicle, Layout } from '@/types';
+import TripScheduleEditor from './TripScheduleEditor';
 
 interface TripFormData {
   patternId: string;
@@ -520,19 +521,12 @@ export default function TripsManager() {
               </div>
             )}
 
-            <div className="text-center text-muted-foreground">
-              <p>Scheduling interface will be implemented here</p>
-              <p className="text-sm">This will include stop times editor with arrive/depart times and effective flags</p>
-            </div>
-
-            <div className="flex justify-end space-x-2">
-              <Button
-                variant="outline"
-                onClick={() => setIsSchedulingDialogOpen(false)}
-              >
-                Close
-              </Button>
-            </div>
+            {schedulingTrip && (
+              <TripScheduleEditor 
+                trip={schedulingTrip} 
+                onClose={() => setIsSchedulingDialogOpen(false)}
+              />
+            )}
           </div>
         </DialogContent>
       </Dialog>

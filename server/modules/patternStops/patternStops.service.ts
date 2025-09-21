@@ -19,4 +19,8 @@ export class PatternStopsService {
   async deletePatternStop(id: string): Promise<void> {
     await this.storage.deletePatternStop(id);
   }
+
+  async bulkReplacePatternStops(patternId: string, patternStops: InsertPatternStop[]): Promise<PatternStop[]> {
+    return await this.storage.bulkReplacePatternStops(patternId, patternStops);
+  }
 }

@@ -57,6 +57,7 @@ export interface IStorage {
   createPatternStop(data: InsertPatternStop): Promise<PatternStop>;
   updatePatternStop(id: string, data: Partial<InsertPatternStop>): Promise<PatternStop>;
   deletePatternStop(id: string): Promise<void>;
+  bulkReplacePatternStops(patternId: string, patternStops: InsertPatternStop[]): Promise<PatternStop[]>;
 
   // Trips
   getTrips(serviceDate?: string): Promise<TripWithDetails[]>;
@@ -185,6 +186,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/pattern-stops', asyncHandler(patternStopsController.create.bind(patternStopsController)));
   app.put('/api/pattern-stops/:id', asyncHandler(patternStopsController.update.bind(patternStopsController)));
   app.delete('/api/pattern-stops/:id', asyncHandler(patternStopsController.delete.bind(patternStopsController)));
+  app.post('/api/trip-patterns/:patternId/stops/bulk-replace', asyncHandler(patternStopsController.bulkReplace.bind(patternStopsController)));
 
   // Trips routes
   app.get('/api/trips', asyncHandler(tripsController.getAll.bind(tripsController)));

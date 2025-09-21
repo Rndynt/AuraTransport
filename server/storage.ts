@@ -158,6 +158,23 @@ export class DatabaseStorage implements IStorage {
     await db.delete(patternStops).where(eq(patternStops.id, id));
   }
 
+  async bulkReplacePatternStops(patternId: string, newPatternStops: InsertPatternStop[]): Promise<PatternStop[]> {
+    // Use transaction for atomic operation
+    const result = await db.transaction(async (tx) => {
+      // Delete existing pattern stops for this pattern
+      await tx.delete(patternStops).where(eq(patternStops.patternId, patternId));
+      
+      // Insert new pattern stops if any
+      if (newPatternStops.length > 0) {
+        return await tx.insert(patternStops).values(newPatternStops).returning();
+      }
+      
+      return [];
+    });
+    
+    return result;
+  }
+
   // Trips
   async getTrips(serviceDate?: string): Promise<TripWithDetails[]> {
     const query = db.select({

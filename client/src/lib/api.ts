@@ -55,7 +55,9 @@ export const tripPatternsApi = {
 export const patternStopsApi = {
   create: (data: any) => apiRequest('POST', '/api/pattern-stops', data).then(res => res.json()),
   update: (id: string, data: any) => apiRequest('PUT', `/api/pattern-stops/${id}`, data).then(res => res.json()),
-  delete: (id: string) => apiRequest('DELETE', `/api/pattern-stops/${id}`)
+  delete: (id: string) => apiRequest('DELETE', `/api/pattern-stops/${id}`),
+  bulkReplace: (patternId: string, patternStops: any[]) => 
+    apiRequest('POST', `/api/trip-patterns/${patternId}/stops/bulk-replace`, patternStops).then(res => res.json())
 };
 
 // Trips API

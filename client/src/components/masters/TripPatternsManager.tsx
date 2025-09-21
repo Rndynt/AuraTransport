@@ -236,25 +236,35 @@ export default function TripPatternsManager() {
     if (!selectedPatternForStops) return;
 
     try {
-      // Save each pattern stop
-      for (const stop of patternStops) {
-        if (stop.stopId) {
-          await createPatternStopMutation.mutateAsync({
-            patternId: selectedPatternForStops.id,
-            stopId: stop.stopId,
-            stopSequence: stop.stopSequence,
-            dwellSeconds: stop.dwellSeconds,
-            boardingAllowed: stop.boardingAllowed !== false,
-            alightingAllowed: stop.alightingAllowed !== false
-          });
+      // Use atomic bulk replace to avoid duplication issues
+      const validStops = patternStops.filter(stop => stop.stopId).map(stop => ({
+        patternId: selectedPatternForStops.id,
+        stopId: stop.stopId,
+        stopSequence: stop.stopSequence,
+        dwellSeconds: stop.dwellSeconds,
+        boardingAllowed: stop.boardingAllowed !== false,
+        alightingAllowed: stop.alightingAllowed !== false
+      }));
+      
+      await patternStopsApi.bulkReplace(selectedPatternForStops.id, validStops);
+      
+      // Invalidate cache for pattern stops and related trip stop times effective flags
+      queryClient.invalidateQueries({ queryKey: ['/api/trip-patterns', selectedPatternForStops.id, 'stops'] });
+      
+      // CRITICAL: Invalidate all trips' effective stop times since pattern changed
+      queryClient.invalidateQueries({ 
+        predicate: (query) => {
+          // Invalidate any query that includes 'stop-times' and 'effective'
+          const key = query.queryKey as string[];
+          return key.includes('stop-times') && key.includes('effective');
         }
-      }
+      });
       
       setIsStopsDialogOpen(false);
       setPatternStops([]);
       toast({
         title: "Success",
-        description: "Pattern stops saved successfully"
+        description: "Pattern stops saved successfully - all affected trips will be refreshed"
       });
     } catch (error) {
       toast({

@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import { PatternStopsService } from "./patternStops.service";
 import { IStorage } from "../../routes";
 import { insertPatternStopSchema } from "@shared/schema";
+import { z } from "zod";
 
 export class PatternStopsController {
   private patternStopsService: PatternStopsService;
@@ -33,5 +34,12 @@ export class PatternStopsController {
     const { id } = req.params;
     await this.patternStopsService.deletePatternStop(id);
     res.status(204).send();
+  }
+
+  async bulkReplace(req: Request, res: Response) {
+    const { patternId } = req.params;
+    const validatedData = z.array(insertPatternStopSchema).parse(req.body);
+    const patternStops = await this.patternStopsService.bulkReplacePatternStops(patternId, validatedData);
+    res.json(patternStops);
   }
 }
