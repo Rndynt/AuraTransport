@@ -38,8 +38,19 @@ export class TripsController {
 
   async delete(req: Request, res: Response) {
     const { id } = req.params;
-    await this.tripsService.deleteTrip(id);
-    res.status(204).send();
+    try {
+      await this.tripsService.deleteTrip(id);
+      res.status(204).send();
+    } catch (error) {
+      if (error instanceof Error && error.message === 'TRIP_HAS_ACTIVE_BOOKINGS') {
+        return res.status(409).json({
+          error: 'Trip has active bookings',
+          message: 'Cannot delete trip that has active bookings (pending or paid). Please cancel active bookings first.',
+          code: 'TRIP_HAS_ACTIVE_BOOKINGS'
+        });
+      }
+      throw error;
+    }
   }
 
   async deriveLegs(req: Request, res: Response) {

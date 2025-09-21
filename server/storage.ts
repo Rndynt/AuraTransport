@@ -225,7 +225,37 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteTrip(id: string): Promise<void> {
-    await db.delete(trips).where(eq(trips.id, id));
+    // JANGAN hapus passenger, payment, bookings - hanya hapus data lainnya
+    // Wrap in transaction for atomicity and concurrency safety
+    await db.transaction(async (tx) => {
+      // Re-check for active bookings inside transaction to prevent race conditions
+      const [result] = await tx.select({ count: sql<number>`count(*)` })
+        .from(bookings)
+        .where(and(
+          eq(bookings.tripId, id),
+          inArray(bookings.status, ['pending', 'paid'])
+        ));
+      
+      if (result.count > 0) {
+        throw new Error('TRIP_HAS_ACTIVE_BOOKINGS');
+      }
+      
+      // Delete in proper order to avoid foreign key constraint violations
+      // 1. Delete seat inventory
+      await tx.delete(seatInventory).where(eq(seatInventory.tripId, id));
+      
+      // 2. Delete trip legs
+      await tx.delete(tripLegs).where(eq(tripLegs.tripId, id));
+      
+      // 3. Delete trip stop times
+      await tx.delete(tripStopTimes).where(eq(tripStopTimes.tripId, id));
+      
+      // 4. Delete trip-specific price rules
+      await tx.delete(priceRules).where(eq(priceRules.tripId, id));
+      
+      // 5. Finally delete the trip itself
+      await tx.delete(trips).where(eq(trips.id, id));
+    });
   }
 
   // Trip Stop Times
@@ -420,11 +450,14 @@ export class DatabaseStorage implements IStorage {
     return printJob;
   }
 
-  // Check if trip has bookings (for immutability guard)
+  // Check if trip has active bookings (for immutability guard)
   async tripHasBookings(tripId: string): Promise<boolean> {
     const [result] = await db.select({ count: sql<number>`count(*)` })
       .from(bookings)
-      .where(eq(bookings.tripId, tripId));
+      .where(and(
+        eq(bookings.tripId, tripId),
+        inArray(bookings.status, ['pending', 'paid'])
+      ));
     return result.count > 0;
   }
 }
