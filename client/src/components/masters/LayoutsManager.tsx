@@ -17,6 +17,8 @@ interface LayoutFormData {
   cols: string;
 }
 
+type LayoutMode = 'automatic' | 'custom';
+
 interface SeatMapItem {
   seat_no: string;
   row: number;
@@ -34,6 +36,9 @@ export default function LayoutsManager() {
     cols: ''
   });
   const [previewSeatMap, setPreviewSeatMap] = useState<SeatMapItem[]>([]);
+  const [layoutMode, setLayoutMode] = useState<LayoutMode>('automatic');
+  const [customSeatMap, setCustomSeatMap] = useState<SeatMapItem[]>([]);
+  const [draggedSeat, setDraggedSeat] = useState<SeatMapItem | null>(null);
   const debounceTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const { toast } = useToast();
 
@@ -108,6 +113,8 @@ export default function LayoutsManager() {
       cols: ''
     });
     setPreviewSeatMap([]);
+    setCustomSeatMap([]);
+    setLayoutMode('automatic');
   };
 
   const generateSeatMap = (rows: number, cols: number): SeatMapItem[] => {
@@ -148,8 +155,69 @@ export default function LayoutsManager() {
     }
     debounceTimeoutRef.current = setTimeout(() => {
       handleRowsColsChange();
-    }, 300);
+    }, 100); // Reduced from 300ms to 100ms for more responsive feedback
   };
+
+  // Add immediate preview update when both fields have valid values
+  // Skip auto-generation when editing unless user explicitly changes rows/cols
+  useEffect(() => {
+    const rows = parseInt(formData.rows, 10);
+    const cols = parseInt(formData.cols, 10);
+    
+    if (!isNaN(rows) && !isNaN(cols) && rows > 0 && cols > 0 && rows <= 20 && cols <= 10) {
+      if (layoutMode === 'automatic' && !editingLayout) {
+        handleRowsColsChange();
+      }
+    }
+  }, [formData.rows, formData.cols, layoutMode, editingLayout]);
+
+  // Drag and drop functions
+  const handleDragStart = (seat: SeatMapItem) => {
+    setDraggedSeat(seat);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, targetRow: number, targetCol: number) => {
+    e.preventDefault();
+    if (!draggedSeat) return;
+
+    const rows = parseInt(formData.rows, 10);
+    const cols = parseInt(formData.cols, 10);
+    if (isNaN(rows) || isNaN(cols)) return;
+
+    // Check if position is already occupied
+    const existingSeat = customSeatMap.find(seat => seat.row === targetRow && seat.col === targetCol);
+    if (existingSeat) {
+      toast({
+        title: "Position Occupied",
+        description: `Position ${targetRow}${String.fromCharCode(64 + targetCol)} is already occupied`,
+        variant: "destructive"
+      });
+      setDraggedSeat(null);
+      return;
+    }
+
+    // Place the dragged seat in the new position with updated coordinates
+    const newSeat: SeatMapItem = {
+      ...draggedSeat,
+      seat_no: `${targetRow}${String.fromCharCode(64 + targetCol)}`,
+      row: targetRow,
+      col: targetCol
+    };
+
+    setCustomSeatMap(prev => [...prev, newSeat]);
+    setDraggedSeat(null);
+  };
+
+  const removeSeatFromCustom = (seatToRemove: SeatMapItem) => {
+    setCustomSeatMap(prev => prev.filter(seat => 
+      !(seat.row === seatToRemove.row && seat.col === seatToRemove.col)
+    ));
+  };
+
 
   const handleCreate = () => {
     setEditingLayout(null);
@@ -164,7 +232,27 @@ export default function LayoutsManager() {
       rows: layout.rows.toString(),
       cols: layout.cols.toString()
     });
-    setPreviewSeatMap(layout.seatMap as SeatMapItem[]);
+    
+    const seatMap = layout.seatMap as SeatMapItem[];
+    const totalCells = layout.rows * layout.cols;
+    
+    // Check if it's a full automatic layout (all cells filled with standard seat naming)
+    const isFullAutomatic = seatMap.length === totalCells && 
+      seatMap.every(seat => {
+        const expectedSeatNo = `${seat.row}${String.fromCharCode(64 + seat.col)}`;
+        return seat.seat_no === expectedSeatNo;
+      });
+    
+    if (isFullAutomatic) {
+      setLayoutMode('automatic');
+      setPreviewSeatMap(seatMap);
+      setCustomSeatMap([]);
+    } else {
+      setLayoutMode('custom');
+      setCustomSeatMap(seatMap);
+      setPreviewSeatMap([]);
+    }
+    
     setIsDialogOpen(true);
   };
 
@@ -195,8 +283,34 @@ export default function LayoutsManager() {
       return;
     }
     
-    // Always generate seatMap from current inputs (fixes edit mode bug)
-    const seatMap = generateSeatMap(rows, cols);
+    // Runtime validation for custom mode
+    if (layoutMode === 'custom') {
+      if (customSeatMap.length === 0) {
+        toast({
+          title: "Error",
+          description: "Please add at least one seat to the layout",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      // Check for out-of-bounds seats
+      const outOfBoundsSeats = customSeatMap.filter(seat => 
+        seat.row < 1 || seat.row > rows || seat.col < 1 || seat.col > cols
+      );
+      
+      if (outOfBoundsSeats.length > 0) {
+        toast({
+          title: "Error",
+          description: `${outOfBoundsSeats.length} seat(s) are outside the layout bounds. Please adjust the layout.`,
+          variant: "destructive"
+        });
+        return;
+      }
+    }
+    
+    // Use custom seatMap if in custom mode, otherwise generate automatically
+    const seatMap = layoutMode === 'custom' ? customSeatMap : generateSeatMap(rows, cols);
     
     const submitData = {
       name: trimmedName,
@@ -232,13 +346,14 @@ export default function LayoutsManager() {
               Add Layout
             </Button>
           </DialogTrigger>
-          <DialogContent className="max-w-4xl max-h-[90vh] overflow-y-auto" data-testid="layout-dialog">
+          <DialogContent className="w-[800px] h-[700px] max-w-none" data-testid="layout-dialog">
             <DialogHeader>
               <DialogTitle>
                 {editingLayout ? 'Edit Layout' : 'Add New Layout'}
               </DialogTitle>
             </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="overflow-y-auto flex-1 px-1">
+              <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name">Layout Name *</Label>
                 <Input
@@ -261,7 +376,32 @@ export default function LayoutsManager() {
                     onChange={(e) => {
                       const value = e.target.value;
                       setFormData(prev => ({ ...prev, rows: value }));
-                      debouncedPreviewUpdate();
+                      
+                      // Immediate update if both fields are valid
+                      const rows = parseInt(value, 10);
+                      const cols = parseInt(formData.cols, 10);
+                      if (!isNaN(rows) && !isNaN(cols) && rows > 0 && cols > 0 && rows <= 20 && cols <= 10) {
+                        // Prune out-of-bounds seats in custom mode
+                        if (layoutMode === 'custom') {
+                          const validSeats = customSeatMap.filter(seat => 
+                            seat.row >= 1 && seat.row <= rows && seat.col >= 1 && seat.col <= cols
+                          );
+                          const removedCount = customSeatMap.length - validSeats.length;
+                          setCustomSeatMap(validSeats);
+                          if (removedCount > 0) {
+                            toast({
+                              title: "Seats Removed",
+                              description: `${removedCount} seat(s) were outside the new layout bounds and have been removed`,
+                              variant: "default"
+                            });
+                          }
+                        } else {
+                          const seatMap = generateSeatMap(rows, cols);
+                          setPreviewSeatMap(seatMap);
+                        }
+                      } else {
+                        debouncedPreviewUpdate();
+                      }
                     }}
                     placeholder="e.g., 10"
                     min="1"
@@ -279,7 +419,32 @@ export default function LayoutsManager() {
                     onChange={(e) => {
                       const value = e.target.value;
                       setFormData(prev => ({ ...prev, cols: value }));
-                      debouncedPreviewUpdate();
+                      
+                      // Immediate update if both fields are valid
+                      const rows = parseInt(formData.rows, 10);
+                      const cols = parseInt(value, 10);
+                      if (!isNaN(rows) && !isNaN(cols) && rows > 0 && cols > 0 && rows <= 20 && cols <= 10) {
+                        // Prune out-of-bounds seats in custom mode
+                        if (layoutMode === 'custom') {
+                          const validSeats = customSeatMap.filter(seat => 
+                            seat.row >= 1 && seat.row <= rows && seat.col >= 1 && seat.col <= cols
+                          );
+                          const removedCount = customSeatMap.length - validSeats.length;
+                          setCustomSeatMap(validSeats);
+                          if (removedCount > 0) {
+                            toast({
+                              title: "Seats Removed",
+                              description: `${removedCount} seat(s) were outside the new layout bounds and have been removed`,
+                              variant: "default"
+                            });
+                          }
+                        } else {
+                          const seatMap = generateSeatMap(rows, cols);
+                          setPreviewSeatMap(seatMap);
+                        }
+                      } else {
+                        debouncedPreviewUpdate();
+                      }
                     }}
                     placeholder="e.g., 4"
                     min="1"
@@ -290,8 +455,43 @@ export default function LayoutsManager() {
                 </div>
               </div>
 
-              {/* Seat Map Preview */}
-              {previewSeatMap.length > 0 && (
+              {/* Layout Mode Toggle */}
+              <div className="space-y-2">
+                <Label>Layout Mode</Label>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant={layoutMode === 'automatic' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => {
+                      setLayoutMode('automatic');
+                      // Immediately populate preview when switching to automatic mode
+                      const rows = parseInt(formData.rows, 10);
+                      const cols = parseInt(formData.cols, 10);
+                      if (!isNaN(rows) && !isNaN(cols) && rows > 0 && cols > 0) {
+                        handleRowsColsChange();
+                      }
+                    }}
+                    data-testid="mode-automatic"
+                  >
+                    <i className="fas fa-magic mr-2"></i>
+                    Automatic
+                  </Button>
+                  <Button
+                    type="button"
+                    variant={layoutMode === 'custom' ? 'default' : 'outline'}
+                    size="sm"
+                    onClick={() => setLayoutMode('custom')}
+                    data-testid="mode-custom"
+                  >
+                    <i className="fas fa-hand-pointer mr-2"></i>
+                    Custom Drag & Drop
+                  </Button>
+                </div>
+              </div>
+
+              {/* Automatic Mode - Seat Map Preview */}
+              {layoutMode === 'automatic' && previewSeatMap.length > 0 && (
                 <div className="space-y-2">
                   <Label>Seat Map Preview</Label>
                   <div className="border border-border rounded-lg p-4 bg-muted/20">
@@ -325,6 +525,99 @@ export default function LayoutsManager() {
                 </div>
               )}
 
+              {/* Custom Mode - Drag & Drop Layout */}
+              {layoutMode === 'custom' && parseInt(formData.rows) > 0 && parseInt(formData.cols) > 0 && (
+                <div className="space-y-4">
+                  <Label>Custom Seat Layout - Drag & Drop</Label>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                    
+                    {/* Available Seats Panel */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Available Seats</h4>
+                      <div className="border border-border rounded-lg p-4 bg-muted/10 min-h-[200px]">
+                        <div className="text-xs text-muted-foreground mb-2">
+                          Drag seats to place them in the grid
+                        </div>
+                        <div className="flex flex-wrap gap-2">
+                          {Array.from({ length: Math.max(0, parseInt(formData.rows) * parseInt(formData.cols) - customSeatMap.length) }, (_, index) => {
+                            const dummySeat: SeatMapItem = {
+                              seat_no: `SEAT`,
+                              row: 0,
+                              col: 0,
+                              class: 'standard',
+                              disabled: false
+                            };
+                            return (
+                              <div
+                                key={`available-${index}`}
+                                draggable
+                                onDragStart={() => handleDragStart(dummySeat)}
+                                className="w-10 h-10 border border-primary rounded text-xs flex items-center justify-center bg-card text-primary font-mono cursor-grab hover:bg-primary/10 active:cursor-grabbing"
+                                title="Drag to place seat in layout"
+                              >
+                                <i className="fas fa-chair"></i>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        {customSeatMap.length === 0 && (
+                          <div className="text-center text-muted-foreground mt-4 text-sm">
+                            No seats placed yet. Start by dragging seats to the grid.
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Layout Grid */}
+                    <div className="space-y-2">
+                      <h4 className="text-sm font-medium">Layout Grid ({formData.rows}×{formData.cols})</h4>
+                      <div className="border border-border rounded-lg p-4 bg-muted/10 overflow-auto max-h-[400px]">
+                        <div className="text-center mb-2 text-xs text-muted-foreground">
+                          <i className="fas fa-steering-wheel mr-1"></i>
+                          Driver
+                        </div>
+                        <div 
+                          className="grid gap-2 justify-center"
+                          style={{ 
+                            gridTemplateColumns: `repeat(${parseInt(formData.cols)}, minmax(0, 1fr))`,
+                            maxWidth: '400px',
+                            margin: '0 auto'
+                          }}
+                        >
+                          {Array.from({ length: parseInt(formData.rows) }, (_, rowIndex) =>
+                            Array.from({ length: parseInt(formData.cols) }, (_, colIndex) => {
+                              const row = rowIndex + 1;
+                              const col = colIndex + 1;
+                              const placedSeat = customSeatMap.find(seat => seat.row === row && seat.col === col);
+                              
+                              return (
+                                <div
+                                  key={`${row}-${col}`}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleDrop(e, row, col)}
+                                  className={`w-12 h-12 border-2 border-dashed border-border rounded text-xs flex items-center justify-center transition-colors ${
+                                    placedSeat 
+                                      ? 'bg-primary text-primary-foreground border-primary cursor-pointer' 
+                                      : 'bg-muted/20 hover:bg-muted/40 hover:border-primary/50'
+                                  }`}
+                                  title={placedSeat ? `${placedSeat.seat_no} - Click to remove` : `Drop zone for row ${row}, column ${String.fromCharCode(64 + col)}`}
+                                  onClick={() => placedSeat && removeSeatFromCustom(placedSeat)}
+                                >
+                                  {placedSeat ? placedSeat.seat_no : `${row}${String.fromCharCode(64 + col)}`}
+                                </div>
+                              );
+                            })
+                          ).flat()}
+                        </div>
+                        <div className="text-center mt-2 text-xs text-muted-foreground">
+                          Total placed: {customSeatMap.length} seats
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
               <div className="flex justify-end space-x-2">
                 <Button
                   type="button"
@@ -336,13 +629,19 @@ export default function LayoutsManager() {
                 </Button>
                 <Button
                   type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending || (!editingLayout && previewSeatMap.length === 0) || !formData.name.trim()}
+                  disabled={createMutation.isPending || updateMutation.isPending || 
+                    (layoutMode === 'automatic' && previewSeatMap.length === 0) ||
+                    (layoutMode === 'custom' && customSeatMap.length === 0) ||
+                    !formData.name.trim() ||
+                    !formData.rows.trim() ||
+                    !formData.cols.trim()}
                   data-testid="submit-button"
                 >
                   {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : 'Save'}
                 </Button>
               </div>
             </form>
+            </div>
           </DialogContent>
         </Dialog>
       </div>
