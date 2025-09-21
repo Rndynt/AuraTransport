@@ -25,6 +25,20 @@ export async function seedData() {
     isOutlet: true
   });
 
+  const bandungStop1 = await storage.createStop({
+    code: "BDP",
+    name: "Bandung Pasteur", 
+    city: "Bandung",
+    isOutlet: true
+  });
+
+  const semarangStop = await storage.createStop({
+    code: "SMR",
+    name: "Semarang", 
+    city: "Semarang",
+    isOutlet: true
+  });
+
   console.log("✅ Stops created");
 
   // Create outlets (only for stops with isOutlet=true: Jakarta & Bandung)
@@ -40,6 +54,20 @@ export async function seedData() {
     name: "Bandung Terminal Outlet",
     address: "Jl. Terminal Bandung", 
     phone: "+62-22-1234567"
+  });
+
+  await storage.createOutlet({
+    stopId: bandungStop1.id,
+    name: "Bandung Pasteur Outlet",
+    address: "Jl. Pasteur Bandung", 
+    phone: "+62-22-7654321"
+  });
+
+  await storage.createOutlet({
+    stopId: semarangStop.id,
+    name: "Semarang Outlet",
+    address: "Jl. Kh Dewantara Semarang", 
+    phone: "+62-24-1234567"
   });
 
   console.log("✅ Outlets created");
@@ -75,7 +103,7 @@ export async function seedData() {
     capacity: 12,
     notes: "Demo vehicle"
   });
-
+  
   console.log("✅ Vehicle created");
 
   // Create trip pattern
