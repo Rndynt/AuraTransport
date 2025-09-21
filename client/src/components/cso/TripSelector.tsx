@@ -124,9 +124,15 @@ export default function TripSelector({
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm">Trip {trip.id.slice(-8)}</p>
+                      <p className="font-medium text-sm">
+                        Route {trip.patternId?.slice(-8)}
+                      </p>
                       <p className="text-xs text-muted-foreground">
+                        Service Date: {trip.serviceDate} • 
                         {trip.capacity} seats • {trip.status}
+                      </p>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Vehicle ID: {trip.vehicleId?.slice(-8)}
                       </p>
                     </div>
                     <Button 

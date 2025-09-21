@@ -42,17 +42,11 @@ export default function SeatMap({
     if (!seatmap) return;
 
     const seatAvailability = seatmap.seatAvailability[seatNo];
+    const isHeldByMe = isHeld(seatNo);
     
-    // If seat is booked or held by someone else, do nothing
-    if (!seatAvailability.available) {
-      // Only allow clicking if it's held by current user (already selected)
-      if (seatAvailability.held && !localSelectedSeats.has(seatNo)) {
-        return;
-      }
-      // If not held and not available, it's booked
-      if (!seatAvailability.held) {
-        return;
-      }
+    // Block only if seat is booked or held by someone else (not by me)
+    if (!seatAvailability.available && !isHeldByMe) {
+      return;
     }
 
     // If seat is already selected, deselect it
@@ -64,6 +58,14 @@ export default function SeatMap({
       });
       await releaseHold(seatNo);
       onSeatDeselect(seatNo);
+      refetch(); // Refresh after releasing hold
+      return;
+    }
+
+    // If seat is held by me but not selected, just select it without creating new hold
+    if (isHeldByMe) {
+      setLocalSelectedSeats(prev => new Set(prev).add(seatNo));
+      onSeatSelect(seatNo);
       return;
     }
 
@@ -72,8 +74,7 @@ export default function SeatMap({
       await createHold(trip.id, seatNo, originSeq, destinationSeq, 1200); // 20 minutes = 1200 seconds
       setLocalSelectedSeats(prev => new Set(prev).add(seatNo));
       onSeatSelect(seatNo);
-      // Refresh seatmap to get updated hold status
-      refetch();
+      refetch(); // Refresh after creating hold
     } catch (error) {
       console.error('Failed to hold seat:', error);
     }
@@ -84,10 +85,17 @@ export default function SeatMap({
     
     const seatAvailability = seatmap.seatAvailability[seatNo];
     
+    // Check if seat is selected by current user
     if (localSelectedSeats.has(seatNo)) {
       return 'seat selected';
     }
     
+    // Check if seat is held by current user (from local holds)
+    if (isHeld(seatNo)) {
+      return 'seat held';
+    }
+    
+    // Check server-side availability
     if (!seatAvailability.available) {
       if (seatAvailability.held) {
         return 'seat held';

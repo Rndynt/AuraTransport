@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -31,6 +31,16 @@ export default function PaymentPanel({
   const [selectedMethod, setSelectedMethod] = useState<PaymentData['method']>(payment?.method || 'cash');
   const [receivedAmount, setReceivedAmount] = useState(payment?.amount?.toString() || totalAmount.toString());
   const { toast } = useToast();
+
+  // Initialize payment data safely in useEffect to avoid render side effects
+  useEffect(() => {
+    if (!payment) {
+      onPaymentUpdate({
+        method: selectedMethod,
+        amount: parseFloat(receivedAmount) || totalAmount
+      });
+    }
+  }, []); // Empty dependency array - only run once on mount
 
   const paymentMethods = [
     { value: 'cash', label: 'Cash', icon: 'fas fa-money-bill-wave' },

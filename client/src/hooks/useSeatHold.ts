@@ -82,6 +82,14 @@ export function useSeatHold() {
 
       return response.holdRef;
     } catch (error) {
+      // Check if it's "already held by you" error, which should not be treated as failure
+      if (error instanceof Error && error.message.includes('ALREADY_HELD_BY_YOU')) {
+        // If already held by the same user, treat as success (no error toast)
+        // The existing hold info should already be in our state
+        return null; // Don't throw error
+      }
+      
+      console.error('Failed to hold seat:', error);
       toast({
         title: "Failed to Reserve Seat",
         description: error instanceof Error ? error.message : "Unknown error occurred",
