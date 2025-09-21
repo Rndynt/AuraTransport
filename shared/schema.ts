@@ -354,8 +354,14 @@ export type BulkUpsertTripStopTime = {
 export const bulkUpsertTripStopTimeSchema = z.object({
   stopId: z.string().uuid(),
   stopSequence: z.number().int().min(1),
-  arriveAt: z.date().nullable().optional(),
-  departAt: z.date().nullable().optional(),
+  arriveAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform(val => {
+    if (val === null || val === undefined) return null;
+    return val instanceof Date ? val : new Date(val);
+  }),
+  departAt: z.union([z.date(), z.string().datetime(), z.null()]).optional().transform(val => {
+    if (val === null || val === undefined) return null;
+    return val instanceof Date ? val : new Date(val);
+  }),
   dwellSeconds: z.number().int().min(0).optional().default(0),
   boardingAllowed: z.boolean().nullable().optional(),
   alightingAllowed: z.boolean().nullable().optional()

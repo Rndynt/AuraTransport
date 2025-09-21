@@ -169,6 +169,15 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
     }
   }, [bookingsCheck]);
 
+  // Auto-validate whenever stop times change to enable/disable buttons
+  useEffect(() => {
+    if (stopTimes.length > 0) {
+      validateTimes();
+      // Clear backend errors when form changes
+      setBackendErrors([]);
+    }
+  }, [stopTimes]);
+
   // Validate chronological order and required fields
   const validateTimes = () => {
     const errors: string[] = [];
