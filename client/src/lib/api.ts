@@ -98,19 +98,35 @@ export const bookingsApi = {
     return fetch(url).then(res => res.json()) as Promise<Booking[]>;
   },
   getById: (id: string) => fetch(`/api/bookings/${id}`).then(res => res.json()) as Promise<Booking>,
-  create: (data: CreateBookingRequest, idempotencyKey?: string) => {
-    const headers: Record<string, string> = {};
+  create: async (data: CreateBookingRequest, idempotencyKey?: string) => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
     if (idempotencyKey) {
       headers['Idempotency-Key'] = idempotencyKey;
     }
-    return fetch('/api/bookings', {
+    
+    const response = await fetch('/api/bookings', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...headers
-      },
+      headers,
       body: JSON.stringify(data)
-    }).then(res => res.json());
+    });
+    
+    if (!response.ok) {
+      const errorText = await response.text();
+      let errorMessage = 'Unknown error occurred';
+      
+      try {
+        const errorData = JSON.parse(errorText);
+        errorMessage = errorData.details || errorData.error || errorData.message || errorMessage;
+      } catch {
+        errorMessage = errorText || `HTTP ${response.status}: ${response.statusText}`;
+      }
+      
+      throw new Error(errorMessage);
+    }
+    
+    return response.json();
   }
 };
 

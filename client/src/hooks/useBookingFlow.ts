@@ -83,7 +83,7 @@ export function useBookingFlow() {
       case 3: return !!state.originStop && !!state.destinationStop;
       case 4: return state.selectedSeats.length > 0;
       case 5: return state.passengers.length === state.selectedSeats.length && 
-                     state.passengers.every(p => p.fullName.trim());
+                     state.passengers.every(p => (p.fullName ?? '').trim());
       case 6: return !!state.payment;
       default: return false;
     }
@@ -95,19 +95,86 @@ export function useBookingFlow() {
   }, [state.selectedSeats]);
 
   const createBooking = useCallback(async (): Promise<{ booking: any; printPayload: any }> => {
-    if (!canProceedToNextStep() || !state.trip || !state.originStop || !state.destinationStop || !state.payment) {
-      throw new Error('Booking flow is incomplete');
+    // Enhanced validation with specific error messages
+    const validationErrors = [];
+    
+    if (!state.trip) validationErrors.push('Trip not selected');
+    if (!state.originStop) validationErrors.push('Origin stop not selected');
+    if (!state.destinationStop) validationErrors.push('Destination stop not selected');
+    if (!state.originSeq && state.originSeq !== 0) validationErrors.push('Origin sequence not set');
+    if (!state.destinationSeq && state.destinationSeq !== 0) validationErrors.push('Destination sequence not set');
+    if (!state.selectedSeats || state.selectedSeats.length === 0) validationErrors.push('No seats selected');
+    if (!state.passengers || state.passengers.length === 0) validationErrors.push('No passengers added');
+    if (state.passengers.length !== state.selectedSeats.length) validationErrors.push('Passenger count does not match seat count');
+    if (!state.payment) validationErrors.push('Payment information not provided');
+    
+    // Route order validation
+    if (state.originSeq !== undefined && state.destinationSeq !== undefined && state.originSeq >= state.destinationSeq) {
+      validationErrors.push('Origin sequence must be less than destination sequence');
+    }
+    
+    // Seat uniqueness validation
+    const uniqueSeats = new Set(state.selectedSeats);
+    if (uniqueSeats.size !== state.selectedSeats.length) {
+      validationErrors.push('Duplicate seats are not allowed');
+    }
+    
+    // Validate seat numbers are not empty
+    state.selectedSeats.forEach((seat, index) => {
+      if (!seat || !seat.trim()) {
+        validationErrors.push(`Seat ${index + 1} number cannot be empty`);
+      }
+    });
+    
+    // Payment validation
+    if (state.payment) {
+      const validMethods = ['cash', 'qr', 'ewallet', 'bank'];
+      if (!validMethods.includes(state.payment.method)) {
+        validationErrors.push('Invalid payment method');
+      }
+      
+      const totalAmount = calculateTotalAmount();
+      if (state.payment.amount < totalAmount) {
+        validationErrors.push(`Payment amount (${state.payment.amount}) is less than total amount (${totalAmount})`);
+      }
+    }
+    
+    // Check if all passengers have required information
+    state.passengers.forEach((passenger, index) => {
+      if (!passenger.fullName || !passenger.fullName.trim()) {
+        validationErrors.push(`Passenger ${index + 1} name is required`);
+      }
+    });
+
+    if (validationErrors.length > 0) {
+      const errorMessage = `Booking validation failed: ${validationErrors.join(', ')}`;
+      // Log only validation errors without exposing PII
+      console.error('Booking validation errors:', validationErrors);
+      console.error('Validation context:', {
+        hasTrip: !!state.trip,
+        hasOriginStop: !!state.originStop,
+        hasDestinationStop: !!state.destinationStop,
+        originSeq: state.originSeq,
+        destinationSeq: state.destinationSeq,
+        seatCount: state.selectedSeats?.length || 0,
+        passengerCount: state.passengers?.length || 0,
+        hasPayment: !!state.payment,
+        paymentMethod: state.payment?.method,
+        currentStep: state.currentStep
+      });
+      throw new Error(errorMessage);
     }
 
     setLoading(true);
     try {
       const totalAmount = calculateTotalAmount();
       
+      // Type assertions are safe here because we've already validated these fields above
       const bookingData: CreateBookingRequest = {
-        tripId: state.trip.id,
+        tripId: state.trip!.id,
         outletId: state.outlet?.id,
-        originStopId: state.originStop.id,
-        destinationStopId: state.destinationStop.id,
+        originStopId: state.originStop!.id,
+        destinationStopId: state.destinationStop!.id,
         originSeq: state.originSeq!,
         destinationSeq: state.destinationSeq!,
         totalAmount: totalAmount,
@@ -119,10 +186,12 @@ export function useBookingFlow() {
           idNumber: passenger.idNumber || undefined,
           seatNo: state.selectedSeats[index]
         })),
-        payment: state.payment
+        payment: state.payment!
       };
 
       const idempotencyKey = `booking-${Date.now()}-${Math.random()}`;
+      // Log booking attempt without exposing PII
+      console.log('Creating booking with idempotency key:', idempotencyKey);
       const result = await bookingsApi.create(bookingData, idempotencyKey);
 
       toast({
@@ -132,6 +201,7 @@ export function useBookingFlow() {
 
       return result;
     } catch (error) {
+      console.error('Booking failed:', error);
       toast({
         title: "Booking Failed",
         description: error instanceof Error ? error.message : "Unknown error occurred",
@@ -141,7 +211,7 @@ export function useBookingFlow() {
     } finally {
       setLoading(false);
     }
-  }, [state, canProceedToNextStep, toast, calculateTotalAmount]);
+  }, [state, toast, calculateTotalAmount]);
 
   const resetFlow = useCallback(() => {
     setState({
