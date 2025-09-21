@@ -89,19 +89,19 @@ export default function PrintPreview({
               <div className="space-y-1">
                 <div className="flex justify-between">
                   <span>From:</span>
-                  <span>Jakarta Terminal</span>
+                  <span>{booking.originStop?.name || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>To:</span>
-                  <span>Bandung Terminal</span>
+                  <span>{booking.destinationStop?.name || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Service Date:</span>
-                  <span>{new Date().toLocaleDateString()}</span>
+                  <span>{booking.trip?.serviceDate ? new Date(booking.trip.serviceDate).toLocaleDateString('id-ID') : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Departure:</span>
-                  <span>10:00</span>
+                  <span>{booking.departAt ? new Date(booking.departAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
                 </div>
               </div>
             </div>
@@ -109,16 +109,29 @@ export default function PrintPreview({
             {/* Passenger Details */}
             <div className="border-t border-dashed pt-4">
               <h5 className="font-bold mb-2">PASSENGER(S)</h5>
-              <div className="space-y-1">
-                <div className="flex justify-between">
-                  <span>Name:</span>
-                  <span>Sample Passenger</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Seat:</span>
-                  <span>2A</span>
-                </div>
-              </div>
+              {booking.passengers && booking.passengers.length > 0 ? (
+                booking.passengers.map((passenger: any, index: number) => (
+                  <div key={index} className="space-y-1 mb-3">
+                    <div className="flex justify-between">
+                      <span>Name:</span>
+                      <span>{passenger.fullName}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span>Seat:</span>
+                      <span>{passenger.seatNo}</span>
+                    </div>
+                    {passenger.phone && (
+                      <div className="flex justify-between">
+                        <span>Phone:</span>
+                        <span>{passenger.phone}</span>
+                      </div>
+                    )}
+                    {index < booking.passengers.length - 1 && <hr className="border-dashed my-2" />}
+                  </div>
+                ))
+              ) : (
+                <div className="text-center text-muted-foreground">No passenger data</div>
+              )}
             </div>
 
             {/* Payment Details */}
@@ -131,11 +144,11 @@ export default function PrintPreview({
                 </div>
                 <div className="flex justify-between">
                   <span>Method:</span>
-                  <span>CASH</span>
+                  <span>{booking.payments?.[0]?.method?.toUpperCase() || 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Status:</span>
-                  <span>PAID</span>
+                  <span>{booking.payments?.[0]?.status?.toUpperCase() || 'PAID'}</span>
                 </div>
               </div>
             </div>

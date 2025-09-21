@@ -319,11 +319,11 @@ export type PatternStop = typeof patternStops.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
 // Extended Trip type with joined data for display
 export type TripWithDetails = Trip & {
-  patternName?: string;
-  patternCode?: string;
-  vehicleCode?: string;
-  vehiclePlate?: string;
-  scheduleTime?: string;
+  patternName?: string | null;
+  patternCode?: string | null;
+  vehicleCode?: string | null;
+  vehiclePlate?: string | null;
+  scheduleTime?: string | null;
 };
 export type TripStopTime = typeof tripStopTimes.$inferSelect;
 export type TripLeg = typeof tripLegs.$inferSelect;
