@@ -1,5 +1,8 @@
 import { randomUUID } from "crypto";
 import { getConfig } from "../../config";
+import { db } from "../../db";
+import { seatHolds, seatInventory } from "@shared/schema";
+import { eq, and, lt, inArray } from "drizzle-orm";
 
 interface SeatHoldOwner {
   operatorId: string;

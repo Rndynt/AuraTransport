@@ -155,10 +155,13 @@ export class BookingsService {
       status: 'queued'
     });
 
+    // Fetch booking with all relations for complete data
+    const bookingWithRelations = await this.getBookingById(booking.id);
+
     // Generate print payload
     const printPayload = await this.printService.generatePrintPayload(booking.id);
 
-    return { booking, printPayload };
+    return { booking: bookingWithRelations, printPayload };
   }
 
   private async validateBoardingAlightingRules(

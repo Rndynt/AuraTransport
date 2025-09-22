@@ -1,7 +1,7 @@
 import { IStorage } from "./routes";
 import { 
   stops, outlets, vehicles, layouts, tripPatterns, patternStops, 
-  trips, tripStopTimes, tripLegs, seatInventory, priceRules, 
+  trips, tripStopTimes, tripLegs, seatInventory, seatHolds, priceRules, 
   bookings, passengers, payments, printJobs,
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
   type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 

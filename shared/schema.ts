@@ -140,6 +140,20 @@ export const seatInventory = pgTable("seat_inventory", {
   holdRef: text("hold_ref")
 });
 
+// 10a. Seat Holds
+export const seatHolds = pgTable("seat_holds", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  holdRef: text("hold_ref").notNull().unique(),
+  tripId: uuid("trip_id").notNull().references(() => trips.id),
+  seatNo: text("seat_no").notNull(),
+  legIndexes: integer("leg_indexes").array().notNull(),
+  ttlClass: text("ttl_class").notNull(), // 'short' | 'long'
+  operatorId: text("operator_id").notNull(),
+  bookingId: text("booking_id"), // nullable for non-booking holds
+  expiresAt: timestamp("expires_at", { withTimezone: true }).notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
+});
+
 // 11. Price Rules
 export const priceRules = pgTable("price_rules", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
