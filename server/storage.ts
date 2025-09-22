@@ -256,6 +256,7 @@ export class DatabaseStorage implements IStorage {
       and(
         eq(trips.serviceDate, serviceDate),
         // Check that this trip has a stop time for this outlet's stop with boarding allowed
+        // AND it's not the final destination (there must be stops after this one)
         sql`EXISTS (
           SELECT 1 
           FROM ${tripStopTimes} tst
@@ -263,6 +264,11 @@ export class DatabaseStorage implements IStorage {
           WHERE tst.trip_id = ${trips.id} 
           AND tst.stop_id = ${outlet.stopId}
           AND COALESCE(tst.boarding_allowed, ps.boarding_allowed, true) = true
+          AND tst.stop_sequence < (
+            SELECT MAX(tst2.stop_sequence) 
+            FROM ${tripStopTimes} tst2 
+            WHERE tst2.trip_id = ${trips.id}
+          )
         )`
       )
     )
