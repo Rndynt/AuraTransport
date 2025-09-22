@@ -5,7 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { BaseDialog } from '@/components/ui/base-dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
@@ -159,20 +159,40 @@ export default function OutletsManager() {
           <h3 className="text-lg font-semibold text-foreground">Outlets Management</h3>
           <p className="text-sm text-muted-foreground">Manage ticket sales outlets and their configurations</p>
         </div>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button onClick={handleCreate} data-testid="add-outlet-button">
-              <i className="fas fa-plus mr-2"></i>
-              Add Outlet
+        <Button onClick={handleCreate} data-testid="add-outlet-button">
+          <i className="fas fa-plus mr-2"></i>
+          Add Outlet
+        </Button>
+      </div>
+
+      <BaseDialog
+        open={isDialogOpen}
+        onClose={() => setIsDialogOpen(false)}
+        title={editingOutlet ? 'Edit Outlet' : 'Add New Outlet'}
+        description="Configure outlet information and settings"
+        size="md"
+        footer={
+          <div className="flex justify-end space-x-2">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              data-testid="cancel-button"
+            >
+              Cancel
             </Button>
-          </DialogTrigger>
-          <DialogContent data-testid="outlet-dialog">
-            <DialogHeader>
-              <DialogTitle>
-                {editingOutlet ? 'Edit Outlet' : 'Add New Outlet'}
-              </DialogTitle>
-            </DialogHeader>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <Button
+              type="submit"
+              form="outlet-form"
+              disabled={createMutation.isPending || updateMutation.isPending}
+              data-testid="submit-button"
+            >
+              {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : 'Save'}
+            </Button>
+          </div>
+        }
+      >
+        <form id="outlet-form" onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="stopId">Stop *</Label>
                 <Select 
@@ -238,27 +258,8 @@ export default function OutletsManager() {
                 />
               </div>
 
-              <div className="flex justify-end space-x-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsDialogOpen(false)}
-                  data-testid="cancel-button"
-                >
-                  Cancel
-                </Button>
-                <Button
-                  type="submit"
-                  disabled={createMutation.isPending || updateMutation.isPending}
-                  data-testid="submit-button"
-                >
-                  {(createMutation.isPending || updateMutation.isPending) ? 'Saving...' : 'Save'}
-                </Button>
-              </div>
-            </form>
-          </DialogContent>
-        </Dialog>
-      </div>
+        </form>
+      </BaseDialog>
 
       <Card>
         <CardContent className="p-0">
