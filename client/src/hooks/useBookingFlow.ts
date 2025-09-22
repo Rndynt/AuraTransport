@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { useToast } from '@/hooks/use-toast';
-import { bookingsApi } from '@/lib/api';
+import { bookingsApi, pricingApi } from '@/lib/api';
 import type { BookingFlowState, BookingStep, CreateBookingRequest } from '@/types';
 
 const BOOKING_STEPS: BookingStep[] = [
@@ -89,10 +89,25 @@ export function useBookingFlow() {
     }
   }, [state]);
 
-  const calculateTotalAmount = useCallback(() => {
-    // Calculate total based on selected seats - using same logic as PaymentPanel
-    return state.selectedSeats.length * 25000;
-  }, [state.selectedSeats]);
+  const calculateTotalAmount = useCallback(async (): Promise<number> => {
+    // If we don't have all required info for pricing, return fallback
+    if (!state.trip?.id || state.originSeq === undefined || state.destinationSeq === undefined || state.selectedSeats.length === 0) {
+      return state.selectedSeats.length * 25000; // Fallback to old calculation
+    }
+
+    try {
+      const fareQuote = await pricingApi.quoteFare(
+        state.trip.id,
+        state.originSeq,
+        state.destinationSeq,
+        state.selectedSeats.length
+      );
+      return fareQuote.totalForAllPassengers;
+    } catch (error) {
+      console.error('Failed to calculate dynamic pricing, using fallback:', error);
+      return state.selectedSeats.length * 25000; // Fallback on error
+    }
+  }, [state.trip?.id, state.originSeq, state.destinationSeq, state.selectedSeats.length]);
 
   const createBooking = useCallback(async (): Promise<{ booking: any; printPayload: any }> => {
     // Enhanced validation with specific error messages
@@ -126,16 +141,11 @@ export function useBookingFlow() {
       }
     });
     
-    // Payment validation
+    // Payment validation (basic method check - amount validation will be done after async pricing)
     if (state.payment) {
       const validMethods = ['cash', 'qr', 'ewallet', 'bank'];
       if (!validMethods.includes(state.payment.method)) {
         validationErrors.push('Invalid payment method');
-      }
-      
-      const totalAmount = calculateTotalAmount();
-      if (state.payment.amount < totalAmount) {
-        validationErrors.push(`Payment amount (${state.payment.amount}) is less than total amount (${totalAmount})`);
       }
     }
     
@@ -167,7 +177,13 @@ export function useBookingFlow() {
 
     setLoading(true);
     try {
-      const totalAmount = calculateTotalAmount();
+      // Calculate total amount dynamically
+      const totalAmount = await calculateTotalAmount();
+      
+      // Now validate payment amount against calculated total
+      if (state.payment && state.payment.amount < totalAmount) {
+        throw new Error(`Payment amount (${state.payment.amount}) is less than total amount (${totalAmount})`);
+      }
       
       // Type assertions are safe here because we've already validated these fields above
       const bookingData: CreateBookingRequest = {

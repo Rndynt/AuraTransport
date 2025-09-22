@@ -148,6 +148,24 @@ export const holdsApi = {
   release: (holdRef: string) => apiRequest('DELETE', `/api/holds/${holdRef}`)
 };
 
+// Pricing API
+export const pricingApi = {
+  quoteFare: (tripId: string, originSeq: number, destinationSeq: number, passengerCount: number = 1) => {
+    const params = new URLSearchParams({
+      tripId,
+      originSeq: originSeq.toString(),
+      destinationSeq: destinationSeq.toString(),
+      passengerCount: passengerCount.toString()
+    });
+    return fetch(`/api/pricing/quote-fare?${params}`).then(res => res.json()) as Promise<{
+      perPassenger: number;
+      totalForAllPassengers: number;
+      passengerCount: number;
+      breakdown: any;
+    }>;
+  }
+};
+
 // Seed API
 export const seedApi = {
   run: () => apiRequest('POST', '/api/seed').then(res => res.json())

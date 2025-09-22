@@ -138,6 +138,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const tripStopTimesController = new TripStopTimesController(storage);
   const tripLegsController = new TripLegsController(storage);
   const priceRulesController = new PriceRulesController(storage);
+  const pricingController = new (await import('./modules/pricing/pricing.controller')).PricingController(storage);
   const bookingsController = new BookingsController(storage);
   const paymentsController = new PaymentsController(storage);
 
@@ -218,6 +219,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/price-rules', asyncHandler(priceRulesController.create.bind(priceRulesController)));
   app.put('/api/price-rules/:id', asyncHandler(priceRulesController.update.bind(priceRulesController)));
   app.delete('/api/price-rules/:id', asyncHandler(priceRulesController.delete.bind(priceRulesController)));
+
+  // Pricing routes
+  app.get('/api/pricing/quote-fare', asyncHandler(pricingController.quoteFare.bind(pricingController)));
 
   // Bookings routes
   app.get('/api/bookings', asyncHandler(bookingsController.getAll.bind(bookingsController)));
