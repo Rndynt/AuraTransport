@@ -7,9 +7,11 @@ import { Switch } from '@/components/ui/switch';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { stopsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { Edit, Trash2 } from 'lucide-react';
 import type { Stop } from '@/types';
 
 interface StopFormData {
@@ -313,25 +315,50 @@ export default function StopsManager() {
                           </span>
                         )}
                       </TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(stop)}
-                            data-testid={`edit-stop-${stop.code}`}
-                          >
-                            <i className="fas fa-edit text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(stop.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`delete-stop-${stop.code}`}
-                          >
-                            <i className="fas fa-trash text-destructive"></i>
-                          </Button>
+                      <TableCell className="overflow-visible">
+                        <div className="flex items-center space-x-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(stop)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Edit stop ${stop.name}`}
+                                  data-testid={`edit-stop-${stop.code}`}
+                                >
+                                  <Edit className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Edit stop</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(stop.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-destructive/10 focus:ring-2 focus:ring-destructive disabled:opacity-50"
+                                  aria-label={`Delete stop ${stop.name}`}
+                                  data-testid={`delete-stop-${stop.code}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Delete stop</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>

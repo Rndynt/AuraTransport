@@ -16,6 +16,10 @@ export class TripsService {
     return await this.storage.getTrips(serviceDate);
   }
 
+  async getCsoAvailableTrips(serviceDate: string, outletId: string) {
+    return await this.storage.getCsoAvailableTrips(serviceDate, outletId);
+  }
+
   async getTripById(id: string): Promise<Trip> {
     const trip = await this.storage.getTripById(id);
     if (!trip) {

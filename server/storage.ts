@@ -6,7 +6,7 @@ import {
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
   type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
   type SeatInventory, type PriceRule, type Booking, type Passenger, 
-  type Payment, type PrintJob,
+  type Payment, type PrintJob, type CsoAvailableTrip,
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
   type InsertTripPattern, type InsertPatternStop, type InsertTrip,
   type InsertTripStopTime, type InsertTripLeg, type InsertSeatInventory,
@@ -207,6 +207,82 @@ export class DatabaseStorage implements IStorage {
       return await query.where(eq(trips.serviceDate, serviceDate)).orderBy(trips.serviceDate);
     }
     return await query.orderBy(desc(trips.serviceDate));
+  }
+
+  async getCsoAvailableTrips(serviceDate: string, outletId: string): Promise<CsoAvailableTrip[]> {
+    // First get the outlet's stop ID
+    const outlet = await this.getOutletById(outletId);
+    if (!outlet) {
+      throw new Error(`Outlet with id ${outletId} not found`);
+    }
+
+    // Build the complex query to find trips that serve this outlet's stop with boarding allowed
+    const result = await db.select({
+      tripId: trips.id,
+      patternCode: tripPatterns.code,
+      vehicleCode: vehicles.code,
+      vehiclePlate: vehicles.plate,
+      capacity: trips.capacity,
+      status: trips.status,
+      departAtAtOutlet: sql<string>`(
+        SELECT tst.depart_at 
+        FROM ${tripStopTimes} tst 
+        WHERE tst.trip_id = ${trips.id} 
+        AND tst.stop_id = ${outlet.stopId}
+      )`.as('departAtAtOutlet'),
+      finalArrivalAt: sql<string>`(
+        SELECT tst.arrive_at 
+        FROM ${tripStopTimes} tst 
+        WHERE tst.trip_id = ${trips.id} 
+        ORDER BY tst.stop_sequence DESC 
+        LIMIT 1
+      )`.as('finalArrivalAt'),
+      stopCount: sql<number>`(
+        SELECT COUNT(*) 
+        FROM ${tripStopTimes} tst 
+        WHERE tst.trip_id = ${trips.id}
+      )`.as('stopCount'),
+      patternStops: sql<string>`(
+        SELECT STRING_AGG(s.name, ' → ' ORDER BY ps.stop_sequence)
+        FROM ${patternStops} ps
+        JOIN ${stops} s ON ps.stop_id = s.id
+        WHERE ps.pattern_id = ${trips.patternId}
+      )`.as('patternStops')
+    })
+    .from(trips)
+    .innerJoin(tripPatterns, eq(trips.patternId, tripPatterns.id))
+    .innerJoin(vehicles, eq(trips.vehicleId, vehicles.id))
+    .where(
+      and(
+        eq(trips.serviceDate, serviceDate),
+        // Check that this trip has a stop time for this outlet's stop with boarding allowed
+        sql`EXISTS (
+          SELECT 1 
+          FROM ${tripStopTimes} tst
+          LEFT JOIN ${patternStops} ps ON ps.pattern_id = ${trips.patternId} AND ps.stop_id = tst.stop_id
+          WHERE tst.trip_id = ${trips.id} 
+          AND tst.stop_id = ${outlet.stopId}
+          AND COALESCE(tst.boarding_allowed, ps.boarding_allowed, true) = true
+        )`
+      )
+    )
+    .orderBy(sql`departAtAtOutlet ASC NULLS LAST`);
+
+    // Transform the result to match the expected format
+    return result.map(row => ({
+      tripId: row.tripId,
+      patternCode: row.patternCode,
+      patternPath: row.patternStops || 'Unknown Route',
+      vehicle: {
+        code: row.vehicleCode,
+        plate: row.vehiclePlate
+      },
+      capacity: row.capacity,
+      status: row.status,
+      departAtAtOutlet: row.departAtAtOutlet,
+      finalArrivalAt: row.finalArrivalAt,
+      stopCount: row.stopCount
+    }));
   }
 
   async getTripById(id: string): Promise<Trip | undefined> {

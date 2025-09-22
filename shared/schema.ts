@@ -344,6 +344,19 @@ export type TripWithDetails = Trip & {
   scheduleTime?: string | null;
 };
 
+// CSO Available Trip type for filtered trips by outlet
+export type CsoAvailableTrip = {
+  tripId: string;
+  patternCode: string;
+  patternPath: string;
+  vehicle: { code: string; plate: string };
+  capacity: number;
+  status: string;
+  departAtAtOutlet: string | null;
+  finalArrivalAt: string | null;
+  stopCount: number;
+};
+
 // Extended TripStopTime with effective flags and stop details
 export type TripStopTimeWithEffectiveFlags = TripStopTime & {
   stopName?: string;

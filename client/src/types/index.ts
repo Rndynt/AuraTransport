@@ -1,13 +1,13 @@
 import { 
   Stop, Outlet, Vehicle, Layout, TripPattern, PatternStop, 
   Trip, TripWithDetails, TripStopTime, TripLeg, SeatInventory, PriceRule, 
-  Booking, Passenger, Payment, PrintJob 
+  Booking, Passenger, Payment, PrintJob, CsoAvailableTrip
 } from "@shared/schema";
 
 export type {
   Stop, Outlet, Vehicle, Layout, TripPattern, PatternStop,
   Trip, TripWithDetails, TripStopTime, TripLeg, SeatInventory, PriceRule,
-  Booking, Passenger, Payment, PrintJob
+  Booking, Passenger, Payment, PrintJob, CsoAvailableTrip
 };
 
 export interface BookingStep {

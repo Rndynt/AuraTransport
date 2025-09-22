@@ -57,7 +57,22 @@ export default function CsoPage() {
   }, [state.trip?.id, state.originSeq, state.destinationSeq, state.selectedSeats.length, calculateTotalAmount]);
 
   const handleOutletSelect = (outlet: Outlet) => {
-    updateState({ outlet });
+    // Clear trip selection and dependent state when outlet changes
+    updateState({ 
+      outlet,
+      trip: undefined,
+      originStop: undefined,
+      destinationStop: undefined,
+      originSeq: undefined,
+      destinationSeq: undefined,
+      selectedSeats: [],
+      passengers: [],
+      payment: undefined
+    });
+    
+    // Clear any held seats
+    releaseAllHolds();
+    
     if (state.currentStep === 1) {
       nextStep();
     }

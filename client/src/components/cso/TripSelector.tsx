@@ -30,9 +30,9 @@ export default function TripSelector({
   });
 
   const { data: trips = [], isLoading: tripsLoading } = useQuery({
-    queryKey: ['/api/trips', selectedDate],
-    queryFn: () => tripsApi.getAll(selectedDate),
-    enabled: !!selectedDate
+    queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+    queryFn: () => tripsApi.getCsoAvailableTrips(selectedDate, selectedOutlet!.id),
+    enabled: !!selectedDate && !!selectedOutlet?.id
   });
 
   return (
@@ -99,7 +99,12 @@ export default function TripSelector({
           </CardTitle>
         </CardHeader>
         <CardContent>
-          {tripsLoading ? (
+          {!selectedOutlet ? (
+            <div className="text-center py-6">
+              <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
+              <p className="text-muted-foreground">Select an outlet to see available trips for this date</p>
+            </div>
+          ) : tripsLoading ? (
             <div className="text-center py-4">
               <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
               <p className="text-sm text-muted-foreground mt-2">Loading trips...</p>
@@ -107,41 +112,42 @@ export default function TripSelector({
           ) : trips.length === 0 ? (
             <div className="text-center py-6">
               <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No trips available for selected date</p>
+              <p className="text-muted-foreground">No trips available for this outlet on {selectedDate}</p>
+              <p className="text-sm text-muted-foreground mt-1">Try another date or outlet</p>
             </div>
           ) : (
             <div className="space-y-2">
               {trips.map(trip => (
                 <div
-                  key={trip.id}
+                  key={trip.tripId}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedTrip?.id === trip.id
+                    selectedTrip?.id === trip.tripId
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'
                   }`}
-                  onClick={() => onTripSelect(trip)}
-                  data-testid={`trip-${trip.id}`}
+                  onClick={() => onTripSelect({...trip, id: trip.tripId})}
+                  data-testid={`trip-${trip.tripId}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="min-w-0 flex-1">
                       <p className="font-medium text-sm">
-                        {trip.patternName || `Route ${trip.patternCode || 'Unknown'}`}
+                        {trip.patternPath || `Route ${trip.patternCode || 'Unknown'}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {trip.scheduleTime ? new Date(trip.scheduleTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'No schedule'} • 
+                        {trip.departAtAtOutlet ? new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'Time not set'} • 
                         {trip.capacity} seats • {trip.status}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
-                        Vehicle: {trip.vehicleCode || 'Unknown'}
+                        Vehicle: {trip.vehicle?.code || 'Unknown'} ({trip.vehicle?.plate || 'Unknown'})
                       </p>
                     </div>
                     <Button 
-                      variant={selectedTrip?.id === trip.id ? "default" : "outline"}
+                      variant={selectedTrip?.id === trip.tripId ? "default" : "outline"}
                       size="sm"
                       className="ml-2 shrink-0"
-                      data-testid={`select-trip-${trip.id}`}
+                      data-testid={`select-trip-${trip.tripId}`}
                     >
-                      {selectedTrip?.id === trip.id ? 'Selected' : 'Select'}
+                      {selectedTrip?.id === trip.tripId ? 'Selected' : 'Select'}
                     </Button>
                   </div>
                 </div>

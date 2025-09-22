@@ -13,7 +13,8 @@ import {
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
   type InsertTripPattern, type InsertPatternStop, type InsertTrip,
   type InsertTripStopTime, type InsertPriceRule, type InsertBooking,
-  type InsertPassenger, type InsertPayment, type InsertPrintJob
+  type InsertPassenger, type InsertPayment, type InsertPrintJob,
+  type CsoAvailableTrip
 } from "@shared/schema";
 
 export interface IStorage {
@@ -61,6 +62,7 @@ export interface IStorage {
 
   // Trips
   getTrips(serviceDate?: string): Promise<TripWithDetails[]>;
+  getCsoAvailableTrips(serviceDate: string, outletId: string): Promise<CsoAvailableTrip[]>;
   getTripById(id: string): Promise<Trip | undefined>;
   createTrip(data: InsertTrip): Promise<Trip>;
   updateTrip(id: string, data: Partial<InsertTrip>): Promise<Trip>;
@@ -191,6 +193,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Trips routes
   app.get('/api/trips', asyncHandler(tripsController.getAll.bind(tripsController)));
+  app.get('/api/cso/available-trips', asyncHandler(tripsController.getCsoAvailableTrips.bind(tripsController)));
   app.get('/api/trips/:id', asyncHandler(tripsController.getById.bind(tripsController)));
   app.post('/api/trips', asyncHandler(tripsController.create.bind(tripsController)));
   app.put('/api/trips/:id', asyncHandler(tripsController.update.bind(tripsController)));

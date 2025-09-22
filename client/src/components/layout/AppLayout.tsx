@@ -2,6 +2,7 @@ import { ReactNode, useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { Menu } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -61,13 +62,13 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setSidebarOpen(true)}
-                  className="lg:hidden p-2 h-10 w-10 text-foreground hover:bg-muted border border-border"
+                  className="lg:hidden p-2 h-10 w-10 text-foreground hover:bg-muted border border-border focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   aria-expanded={sidebarOpen}
                   aria-controls="mobile-sidebar"
-                  aria-label="Open navigation menu"
+                  aria-label="Toggle sidebar"
                   data-testid="open-sidebar"
                 >
-                  <i className="fas fa-bars text-lg"></i>
+                  <Menu className="w-5 h-5" style={{ fill: 'currentColor' }} />
                 </Button>
               )}
               <div>

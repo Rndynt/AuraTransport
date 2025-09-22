@@ -2,7 +2,8 @@ import { apiRequest } from "./queryClient";
 import type { 
   Stop, Outlet, Vehicle, Layout, TripPattern, PatternStop,
   Trip, TripWithDetails, TripStopTime, PriceRule, Booking,
-  SeatmapResponse, HoldResponse, CreateBookingRequest, CreateHoldRequest
+  SeatmapResponse, HoldResponse, CreateBookingRequest, CreateHoldRequest,
+  CsoAvailableTrip
 } from "@/types";
 
 // Stops API
@@ -65,6 +66,10 @@ export const tripsApi = {
   getAll: (date?: string) => {
     const url = date ? `/api/trips?date=${date}` : '/api/trips';
     return fetch(url).then(res => res.json()) as Promise<TripWithDetails[]>;
+  },
+  getCsoAvailableTrips: (date: string, outletId: string) => {
+    return fetch(`/api/cso/available-trips?date=${date}&outletId=${outletId}`)
+      .then(res => res.json()) as Promise<CsoAvailableTrip[]>;
   },
   getById: (id: string) => fetch(`/api/trips/${id}`).then(res => res.json()) as Promise<Trip>,
   create: (data: any) => apiRequest('POST', '/api/trips', data).then(res => res.json()),

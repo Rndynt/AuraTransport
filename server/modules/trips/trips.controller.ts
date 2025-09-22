@@ -17,6 +17,28 @@ export class TripsController {
     res.json(trips);
   }
 
+  async getCsoAvailableTrips(req: Request, res: Response) {
+    const { date, outletId } = req.query;
+    
+    // Validate required parameters
+    if (!date) {
+      return res.status(400).json({ error: 'date parameter is required' });
+    }
+    if (!outletId) {
+      return res.status(400).json({ error: 'outletId parameter is required' });
+    }
+
+    try {
+      const trips = await this.tripsService.getCsoAvailableTrips(date as string, outletId as string);
+      res.json(trips);
+    } catch (error) {
+      if (error instanceof Error && error.message.includes('not found')) {
+        return res.status(404).json({ error: error.message });
+      }
+      throw error;
+    }
+  }
+
   async getById(req: Request, res: Response) {
     const { id } = req.params;
     const trip = await this.tripsService.getTripById(id);
