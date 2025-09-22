@@ -20,7 +20,8 @@ export default function PrintPreview({
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
-      minute: '2-digit'
+      minute: '2-digit',
+      hour12: false
     });
   };
 
@@ -101,7 +102,7 @@ export default function PrintPreview({
                 </div>
                 <div className="flex justify-between">
                   <span>Departure:</span>
-                  <span>{booking.departAt ? new Date(booking.departAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'N/A'}</span>
+                  <span>{booking.departAt ? new Date(booking.departAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}</span>
                 </div>
               </div>
             </div>

@@ -232,7 +232,8 @@ export default function TripsManager() {
     if (trip.scheduleTime) {
       const departTime = new Date(trip.scheduleTime).toLocaleTimeString('en-US', { 
         hour: '2-digit', 
-        minute: '2-digit' 
+        minute: '2-digit',
+        hour12: false 
       });
       return `Departs: ${departTime}`;
     }

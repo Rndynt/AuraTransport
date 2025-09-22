@@ -128,7 +128,7 @@ export default function TripSelector({
                         {trip.patternName || `Route ${trip.patternCode || 'Unknown'}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {trip.scheduleTime ? new Date(trip.scheduleTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : 'No schedule'} • 
+                        {trip.scheduleTime ? new Date(trip.scheduleTime).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'No schedule'} • 
                         {trip.capacity} seats • {trip.status}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
