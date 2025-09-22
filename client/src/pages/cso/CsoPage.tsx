@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import BookingStepper from '@/components/cso/BookingStepper';
 import TripSelector from '@/components/cso/TripSelector';
@@ -16,6 +16,7 @@ import type { Trip, Stop, Outlet } from '@/types';
 
 export default function CsoPage() {
   const [bookingResult, setBookingResult] = useState<{ booking: any; printPayload: any } | null>(null);
+  const [totalAmount, setTotalAmount] = useState<number>(0);
   const { 
     state, 
     steps, 
@@ -35,6 +36,25 @@ export default function CsoPage() {
   } = useBookingFlow();
   
   const { releaseAllHolds } = useSeatHold();
+
+  // Calculate total amount when dependencies change
+  useEffect(() => {
+    const updateTotal = async () => {
+      try {
+        const total = await calculateTotalAmount();
+        setTotalAmount(total);
+      } catch (error) {
+        console.error('Failed to calculate total amount:', error);
+        setTotalAmount(0);
+      }
+    };
+
+    if (state.selectedSeats.length > 0) {
+      updateTotal();
+    } else {
+      setTotalAmount(0);
+    }
+  }, [state.trip?.id, state.originSeq, state.destinationSeq, state.selectedSeats.length, calculateTotalAmount]);
 
   const handleOutletSelect = (outlet: Outlet) => {
     updateState({ outlet });
@@ -210,7 +230,7 @@ export default function CsoPage() {
         return (
           <div className="space-y-4">
             <PaymentPanel
-              totalAmount={calculateTotalAmount()}
+              totalAmount={totalAmount}
               payment={state.payment}
               onPaymentUpdate={handlePaymentUpdate}
               onSubmit={handleCreateBooking}
@@ -297,7 +317,7 @@ export default function CsoPage() {
                         style: 'currency',
                         currency: 'IDR',
                         minimumFractionDigits: 0
-                      }).format(calculateTotalAmount())}</span>
+                      }).format(totalAmount)}</span>
                     </div>
                   </div>
                 )}
