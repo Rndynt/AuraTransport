@@ -11,9 +11,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { DatePicker } from '@/components/ui/date-picker';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { priceRulesApi, tripPatternsApi, tripsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { Edit, Trash2 } from 'lucide-react';
 import type { PriceRule, TripPattern, Trip } from '@/types';
 
 interface PriceRuleFormData {
@@ -479,25 +481,50 @@ export default function PriceRulesManager() {
                         }
                       </TableCell>
                       <TableCell className="font-mono">{rule.priority}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(rule)}
-                            data-testid={`edit-price-rule-${rule.id}`}
-                          >
-                            <i className="fas fa-edit text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(rule.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`delete-price-rule-${rule.id}`}
-                          >
-                            <i className="fas fa-trash text-destructive"></i>
-                          </Button>
+                      <TableCell className="overflow-visible">
+                        <div className="flex items-center space-x-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(rule)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Edit price rule ${rule.scope}`}
+                                  data-testid={`edit-price-rule-${rule.id}`}
+                                >
+                                  <Edit className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Edit price rule</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(rule.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-destructive/10 focus:ring-2 focus:ring-destructive disabled:opacity-50"
+                                  aria-label={`Delete price rule ${rule.scope}`}
+                                  data-testid={`delete-price-rule-${rule.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Delete price rule</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>

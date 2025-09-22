@@ -9,9 +9,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { tripsApi, tripPatternsApi, vehiclesApi, layoutsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { Edit, Trash2, Clock, Route, Grid3X3 } from 'lucide-react';
 import type { Trip, TripPattern, Vehicle, Layout } from '@/types';
 import TripScheduleEditor from './TripScheduleEditor';
 
@@ -459,56 +461,115 @@ export default function TripsManager() {
                       <TableCell>{getVehicleName(trip.vehicleId)}</TableCell>
                       <TableCell>{trip.capacity} seats</TableCell>
                       <TableCell>{getStatusBadge(trip.status || 'scheduled')}</TableCell>
-                      <TableCell>
+                      <TableCell className="overflow-visible">
                         <div className="flex items-center space-x-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleScheduling(trip)}
-                            title="Manage Schedule"
-                            data-testid={`scheduling-${trip.id}`}
-                          >
-                            <i className="fas fa-clock text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDeriveLegs(trip.id)}
-                            disabled={deriveLegsMutation.isPending}
-                            title="Derive Legs"
-                            data-testid={`derive-legs-${trip.id}`}
-                          >
-                            <i className="fas fa-route text-secondary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handlePrecomputeInventory(trip.id)}
-                            disabled={precomputeSeatInventoryMutation.isPending}
-                            title="Precompute Inventory"
-                            data-testid={`precompute-inventory-${trip.id}`}
-                          >
-                            <i className="fas fa-th-large text-accent"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(trip)}
-                            title="Edit Trip"
-                            data-testid={`edit-trip-${trip.id}`}
-                          >
-                            <i className="fas fa-edit text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(trip.id)}
-                            disabled={deleteMutation.isPending}
-                            title="Delete Trip"
-                            data-testid={`delete-trip-${trip.id}`}
-                          >
-                            <i className="fas fa-trash text-destructive"></i>
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleScheduling(trip)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Manage schedule for trip ${trip.id.slice(-8)}`}
+                                  data-testid={`scheduling-${trip.id}`}
+                                >
+                                  <Clock className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Schedule</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Manage schedule</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDeriveLegs(trip.id)}
+                                  disabled={deriveLegsMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-secondary/10 focus:ring-2 focus:ring-secondary disabled:opacity-50"
+                                  aria-label={`Derive legs for trip ${trip.id.slice(-8)}`}
+                                  data-testid={`derive-legs-${trip.id}`}
+                                >
+                                  <Route className="h-4 w-4 text-secondary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Derive</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Derive legs</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handlePrecomputeInventory(trip.id)}
+                                  disabled={precomputeSeatInventoryMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-accent/10 focus:ring-2 focus:ring-accent disabled:opacity-50"
+                                  aria-label={`Precompute inventory for trip ${trip.id.slice(-8)}`}
+                                  data-testid={`precompute-inventory-${trip.id}`}
+                                >
+                                  <Grid3X3 className="h-4 w-4 text-accent" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Inventory</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Precompute inventory</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(trip)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Edit trip ${trip.id.slice(-8)}`}
+                                  data-testid={`edit-trip-${trip.id}`}
+                                >
+                                  <Edit className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Edit trip</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(trip.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-destructive/10 focus:ring-2 focus:ring-destructive disabled:opacity-50"
+                                  aria-label={`Delete trip ${trip.id.slice(-8)}`}
+                                  data-testid={`delete-trip-${trip.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Delete trip</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>

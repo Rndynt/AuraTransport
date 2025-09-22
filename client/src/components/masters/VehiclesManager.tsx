@@ -8,9 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { vehiclesApi, layoutsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { Edit, Trash2 } from 'lucide-react';
 import type { Vehicle, Layout } from '@/types';
 
 interface VehicleFormData {
@@ -303,25 +305,50 @@ export default function VehiclesManager() {
                       <TableCell>{getLayoutName(vehicle.layoutId)}</TableCell>
                       <TableCell>{vehicle.capacity} seats</TableCell>
                       <TableCell className="max-w-xs truncate">{vehicle.notes || '-'}</TableCell>
-                      <TableCell>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(vehicle)}
-                            data-testid={`edit-vehicle-${vehicle.code}`}
-                          >
-                            <i className="fas fa-edit text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(vehicle.id)}
-                            disabled={deleteMutation.isPending}
-                            data-testid={`delete-vehicle-${vehicle.code}`}
-                          >
-                            <i className="fas fa-trash text-destructive"></i>
-                          </Button>
+                      <TableCell className="overflow-visible">
+                        <div className="flex items-center space-x-1">
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(vehicle)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Edit vehicle ${vehicle.code}`}
+                                  data-testid={`edit-vehicle-${vehicle.code}`}
+                                >
+                                  <Edit className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Edit vehicle</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(vehicle.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-destructive/10 focus:ring-2 focus:ring-destructive disabled:opacity-50"
+                                  aria-label={`Delete vehicle ${vehicle.code}`}
+                                  data-testid={`delete-vehicle-${vehicle.code}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Delete vehicle</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>

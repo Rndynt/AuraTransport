@@ -9,9 +9,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useToast } from '@/hooks/use-toast';
 import { tripPatternsApi, layoutsApi, stopsApi, patternStopsApi } from '@/lib/api';
 import { queryClient } from '@/lib/queryClient';
+import { Edit, Trash2, MapPin } from 'lucide-react';
 import type { TripPattern, Layout, Stop, PatternStop } from '@/types';
 
 interface TripPatternFormData {
@@ -564,36 +566,71 @@ export default function TripPatternsManager() {
                           ))}
                         </div>
                       </TableCell>
-                      <TableCell>
+                      <TableCell className="overflow-visible">
                         <div className="flex items-center space-x-1">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleManageStops(pattern)}
-                            title="Manage Stops"
-                            data-testid={`manage-stops-${pattern.code}`}
-                          >
-                            <i className="fas fa-route text-secondary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleEdit(pattern)}
-                            title="Edit Pattern"
-                            data-testid={`edit-pattern-${pattern.code}`}
-                          >
-                            <i className="fas fa-edit text-primary"></i>
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onClick={() => handleDelete(pattern.id)}
-                            disabled={deleteMutation.isPending}
-                            title="Delete Pattern"
-                            data-testid={`delete-pattern-${pattern.code}`}
-                          >
-                            <i className="fas fa-trash text-destructive"></i>
-                          </Button>
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleManageStops(pattern)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-secondary/10 focus:ring-2 focus:ring-secondary"
+                                  aria-label={`Manage stops for ${pattern.name}`}
+                                  data-testid={`manage-stops-${pattern.code}`}
+                                >
+                                  <MapPin className="h-4 w-4 text-secondary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Manage</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Manage stops</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleEdit(pattern)}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-primary/10 focus:ring-2 focus:ring-primary"
+                                  aria-label={`Edit pattern ${pattern.name}`}
+                                  data-testid={`edit-pattern-${pattern.code}`}
+                                >
+                                  <Edit className="h-4 w-4 text-primary" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Edit</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Edit pattern</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                          
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  onClick={() => handleDelete(pattern.id)}
+                                  disabled={deleteMutation.isPending}
+                                  className="h-8 w-8 p-0 md:h-auto md:w-auto md:px-3 md:py-2 hover:bg-destructive/10 focus:ring-2 focus:ring-destructive disabled:opacity-50"
+                                  aria-label={`Delete pattern ${pattern.name}`}
+                                  data-testid={`delete-pattern-${pattern.code}`}
+                                >
+                                  <Trash2 className="h-4 w-4 text-destructive" />
+                                  <span className="sr-only md:not-sr-only md:ml-2">Delete</span>
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent className="md:hidden">
+                                <p>Delete pattern</p>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
                         </div>
                       </TableCell>
                     </TableRow>
