@@ -5,9 +5,9 @@ import { z } from "zod";
 
 const quoteFareSchema = z.object({
   tripId: z.string().uuid(),
-  originSeq: z.number(),
-  destinationSeq: z.number(),
-  passengerCount: z.number().positive().default(1)
+  originSeq: z.coerce.number().int(),
+  destinationSeq: z.coerce.number().int(),
+  passengerCount: z.coerce.number().int().positive().default(1)
 });
 
 export class PricingController {
