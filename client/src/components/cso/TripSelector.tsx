@@ -7,13 +7,13 @@ import { Label } from '@/components/ui/label';
 import { tripsApi, outletsApi } from '@/lib/api';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Store, Calendar, Bus, Info, Loader2 } from 'lucide-react';
-import type { Trip, TripWithDetails, Outlet } from '@/types';
+import type { Trip, TripWithDetails, Outlet, CsoAvailableTrip } from '@/types';
 
 interface TripSelectorProps {
   selectedOutlet?: Outlet;
-  selectedTrip?: TripWithDetails;
+  selectedTrip?: CsoAvailableTrip;
   onOutletSelect: (outlet: Outlet) => void;
-  onTripSelect: (trip: TripWithDetails) => void;
+  onTripSelect: (trip: CsoAvailableTrip) => void;
 }
 
 export default function TripSelector({ 
@@ -29,7 +29,7 @@ export default function TripSelector({
     queryFn: outletsApi.getAll
   });
 
-  const { data: trips = [], isLoading: tripsLoading } = useQuery({
+  const { data: trips = [], isLoading: tripsLoading } = useQuery<CsoAvailableTrip[]>({
     queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
     queryFn: () => tripsApi.getCsoAvailableTrips(selectedDate, selectedOutlet!.id),
     enabled: !!selectedDate && !!selectedOutlet?.id
@@ -121,11 +121,11 @@ export default function TripSelector({
                 <div
                   key={trip.tripId}
                   className={`p-3 border rounded-lg cursor-pointer transition-colors ${
-                    selectedTrip?.id === trip.tripId
+                    selectedTrip?.tripId === trip.tripId
                       ? 'border-primary bg-primary/5'
                       : 'border-border hover:border-primary/50'
                   }`}
-                  onClick={() => onTripSelect({...trip, id: trip.tripId})}
+                  onClick={() => onTripSelect(trip)}
                   data-testid={`trip-${trip.tripId}`}
                 >
                   <div className="flex items-center justify-between">
@@ -142,12 +142,12 @@ export default function TripSelector({
                       </p>
                     </div>
                     <Button 
-                      variant={selectedTrip?.id === trip.tripId ? "default" : "outline"}
+                      variant={selectedTrip?.tripId === trip.tripId ? "default" : "outline"}
                       size="sm"
                       className="ml-2 shrink-0"
                       data-testid={`select-trip-${trip.tripId}`}
                     >
-                      {selectedTrip?.id === trip.tripId ? 'Selected' : 'Select'}
+                      {selectedTrip?.tripId === trip.tripId ? 'Selected' : 'Select'}
                     </Button>
                   </div>
                 </div>

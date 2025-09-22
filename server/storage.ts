@@ -224,30 +224,30 @@ export class DatabaseStorage implements IStorage {
       vehiclePlate: vehicles.plate,
       capacity: trips.capacity,
       status: trips.status,
-      departAtAtOutlet: sql<string>`(
+      departAtOutlet: sql<string>`(
         SELECT tst.depart_at 
         FROM ${tripStopTimes} tst 
         WHERE tst.trip_id = ${trips.id} 
         AND tst.stop_id = ${outlet.stopId}
-      )`.as('departAtAtOutlet'),
+      )`.as('depart_at_outlet'),
       finalArrivalAt: sql<string>`(
         SELECT tst.arrive_at 
         FROM ${tripStopTimes} tst 
         WHERE tst.trip_id = ${trips.id} 
         ORDER BY tst.stop_sequence DESC 
         LIMIT 1
-      )`.as('finalArrivalAt'),
+      )`.as('final_arrival_at'),
       stopCount: sql<number>`(
         SELECT COUNT(*) 
         FROM ${tripStopTimes} tst 
         WHERE tst.trip_id = ${trips.id}
-      )`.as('stopCount'),
+      )`.as('stop_count'),
       patternStops: sql<string>`(
         SELECT STRING_AGG(s.name, ' → ' ORDER BY ps.stop_sequence)
         FROM ${patternStops} ps
         JOIN ${stops} s ON ps.stop_id = s.id
         WHERE ps.pattern_id = ${trips.patternId}
-      )`.as('patternStops')
+      )`
     })
     .from(trips)
     .innerJoin(tripPatterns, eq(trips.patternId, tripPatterns.id))
@@ -266,7 +266,7 @@ export class DatabaseStorage implements IStorage {
         )`
       )
     )
-    .orderBy(sql`departAtAtOutlet ASC NULLS LAST`);
+    .orderBy(sql`depart_at_outlet ASC NULLS LAST`);
 
     // Transform the result to match the expected format
     return result.map(row => ({
@@ -278,8 +278,8 @@ export class DatabaseStorage implements IStorage {
         plate: row.vehiclePlate
       },
       capacity: row.capacity,
-      status: row.status,
-      departAtAtOutlet: row.departAtAtOutlet,
+      status: row.status || 'scheduled',
+      departAtAtOutlet: row.departAtOutlet,
       finalArrivalAt: row.finalArrivalAt,
       stopCount: row.stopCount
     }));

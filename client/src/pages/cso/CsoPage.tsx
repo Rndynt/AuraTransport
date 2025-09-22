@@ -12,11 +12,12 @@ import { useSeatHold } from '@/hooks/useSeatHold';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { ChevronLeft, ChevronRight, Users, CreditCard } from 'lucide-react';
-import type { Trip, Stop, Outlet } from '@/types';
+import type { Trip, Stop, Outlet, CsoAvailableTrip } from '@/types';
 
 export default function CsoPage() {
   const [bookingResult, setBookingResult] = useState<{ booking: any; printPayload: any } | null>(null);
   const [totalAmount, setTotalAmount] = useState<number>(0);
+  const [selectedCsoTrip, setSelectedCsoTrip] = useState<CsoAvailableTrip | undefined>();
   const { 
     state, 
     steps, 
@@ -78,7 +79,20 @@ export default function CsoPage() {
     }
   };
 
-  const handleTripSelect = (trip: Trip) => {
+  const handleTripSelect = (csoTrip: CsoAvailableTrip) => {
+    setSelectedCsoTrip(csoTrip);
+    // Convert CsoAvailableTrip to Trip for the booking flow
+    const trip: Trip = {
+      id: csoTrip.tripId,
+      patternId: '', // Will be filled by API call if needed
+      vehicleId: '', // Will be filled by API call if needed
+      serviceDate: new Date().toISOString().split('T')[0], // Use current date as fallback
+      capacity: csoTrip.capacity,
+      status: csoTrip.status as 'scheduled' | 'canceled' | 'closed',
+      layoutId: null,
+      channelFlags: {},
+      createdAt: null
+    };
     updateState({ trip });
     if (state.currentStep === 2) {
       nextStep();
@@ -165,7 +179,7 @@ export default function CsoPage() {
         return (
           <TripSelector
             selectedOutlet={state.outlet}
-            selectedTrip={state.trip}
+            selectedTrip={selectedCsoTrip}
             onOutletSelect={handleOutletSelect}
             onTripSelect={handleTripSelect}
           />
