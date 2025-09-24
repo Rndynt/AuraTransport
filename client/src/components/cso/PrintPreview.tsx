@@ -15,13 +15,14 @@ export default function PrintPreview({
   onPrint 
 }: PrintPreviewProps) {
   const formatDateTime = (dateTime: string) => {
-    return new Date(dateTime).toLocaleString('en-US', {
+    return new Date(dateTime).toLocaleString('id-ID', {
       year: 'numeric',
       month: 'short',
       day: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
     });
   };
 
@@ -98,11 +99,11 @@ export default function PrintPreview({
                 </div>
                 <div className="flex justify-between">
                   <span>Service Date:</span>
-                  <span>{booking.trip?.serviceDate ? new Date(booking.trip.serviceDate).toLocaleDateString('id-ID') : 'N/A'}</span>
+                  <span>{booking.trip?.serviceDate ? new Date(booking.trip.serviceDate).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Departure:</span>
-                  <span>{booking.departAt ? new Date(booking.departAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'N/A'}</span>
+                  <span>{booking.departAt ? new Date(booking.departAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }) : 'N/A'}</span>
                 </div>
               </div>
             </div>

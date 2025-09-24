@@ -87,7 +87,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
               </div>
               <div className="text-xs lg:text-sm text-muted-foreground flex items-center">
                 <i className="fas fa-calendar mr-1 lg:mr-2"></i>
-                <span className="hidden sm:inline">{new Date().toLocaleDateString()}</span>
+                <span className="hidden sm:inline">{new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</span>
               </div>
             </div>
           </div>

@@ -232,10 +232,11 @@ export default function TripsManager() {
     // For now, we'll extract schedule info from the existing scheduleTime field
     // In a real implementation, this would come from the TripWithDetails type
     if (trip.scheduleTime) {
-      const departTime = new Date(trip.scheduleTime).toLocaleTimeString('en-US', { 
+      const departTime = new Date(trip.scheduleTime).toLocaleTimeString('id-ID', { 
         hour: '2-digit', 
         minute: '2-digit',
-        hour12: false 
+        hour12: false,
+        timeZone: 'Asia/Jakarta'
       });
       return `Departs: ${departTime}`;
     }

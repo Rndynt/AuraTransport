@@ -36,10 +36,11 @@ export default function RouteTimeline({
   const formatTime = (timestamp: string | Date | null) => {
     if (!timestamp) return '--:--';
     const date = timestamp instanceof Date ? timestamp : new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
+    return date.toLocaleTimeString('id-ID', {
       hour: '2-digit',
       minute: '2-digit',
-      hour12: false
+      hour12: false,
+      timeZone: 'Asia/Jakarta'
     });
   };
 

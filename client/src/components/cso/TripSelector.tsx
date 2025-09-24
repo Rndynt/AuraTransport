@@ -134,7 +134,7 @@ export default function TripSelector({
                         {trip.patternPath || `Route ${trip.patternCode || 'Unknown'}`}
                       </p>
                       <p className="text-xs text-muted-foreground">
-                        {trip.departAtAtOutlet ? new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false }) : 'Time not set'} • 
+                        {trip.departAtAtOutlet ? new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }) : 'Time not set'} • 
                         {trip.capacity} seats • {trip.status}
                       </p>
                       <p className="text-xs text-muted-foreground mt-1">
