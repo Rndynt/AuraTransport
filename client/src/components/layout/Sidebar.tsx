@@ -1,9 +1,42 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { MapPin, Store, Truck, LayoutGrid, Route, Calendar, DollarSign, Ticket, List, Bus, X } from "lucide-react";
+import { MapPin, Store, Truck, LayoutGrid, Route, Calendar, DollarSign, Ticket, List, X } from "lucide-react";
+
+// ======= Transity Mark (Tri-Hub Y-Node) =======
+// Mono (stroke + nodes) mengikuti currentColor agar otomatis adaptif light/dark.
+function TransityMark({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 256 256"
+      role="img"
+      aria-label="Transity logo"
+      className={className}
+    >
+      <title>Transity — Tri-Hub mark</title>
+      <g fill="none" stroke="currentColor" strokeWidth="16" strokeLinecap="round">
+        <path d="M128 140 L84 188" />
+        <path d="M128 140 L172 188" />
+        <path d="M128 140 L156 84" />
+      </g>
+      <g fill="currentColor">
+        <circle cx="128" cy="140" r="12" />
+        <circle cx="84" cy="188" r="10" />
+        <circle cx="172" cy="188" r="10" />
+        <circle cx="156" cy="84" r="10" />
+      </g>
+    </svg>
+  );
+}
 
 const navigationItems = [
+  {
+    title: "Operations",
+    items: [
+      { name: "Reservasi", path: "/cso", icon: Ticket },
+      { name: "All Bookings", path: "/bookings", icon: List },
+    ]
+  },
   {
     title: "Masters",
     items: [
@@ -14,13 +47,6 @@ const navigationItems = [
       { name: "Trip Patterns", path: "/masters?tab=patterns", icon: Route },
       { name: "Trips", path: "/masters?tab=trips", icon: Calendar },
       { name: "Price Rules", path: "/masters?tab=pricing", icon: DollarSign },
-    ]
-  },
-  {
-    title: "Operations",
-    items: [
-      { name: "CSO Booking", path: "/cso", icon: Ticket },
-      { name: "All Bookings", path: "/bookings", icon: List },
     ]
   }
 ];
@@ -59,9 +85,14 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg lg:text-xl font-bold text-primary flex items-center">
-              <Bus className="w-5 h-5 mr-2" />
-              <span className="hidden sm:inline">BusTicket Pro</span>
-              <span className="sm:hidden">BTP</span>
+              {/* Replaced Bus icon with TransityMark */}
+              <TransityMark
+                className="w-8 h-8 mr-2 shrink-0"
+                data-testid="logo-transity"
+              />
+              {/* Logo text */}
+              <span className="hidden sm:inline">Transity</span>
+              <span className="sm:hidden">Transity</span>
             </h1>
             <p className="text-xs lg:text-sm text-muted-foreground mt-1 hidden lg:block">
               Multi-Stop Travel System
@@ -81,7 +112,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
           )}
         </div>
       </div>
-      
+
       <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
         <div className="space-y-4 lg:space-y-6">
           {navigationItems.map((section) => (
@@ -114,7 +145,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
           ))}
         </div>
       </nav>
-      
+
       <div className="p-3 lg:p-4 border-t border-border">
         <div className="text-xs text-muted-foreground">
           <p className="truncate">Demo Transport</p>
@@ -124,3 +155,4 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
     </div>
   );
 }
+
