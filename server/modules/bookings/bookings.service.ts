@@ -19,17 +19,18 @@ export class BookingsService {
     return await this.storage.getBookings(tripId);
   }
 
-  async getBookingById(id: string): Promise<Booking & { passengers?: any[]; payments?: any[]; tripDetails?: any; originStop?: any; destinationStop?: any }> {
+  async getBookingById(id: string): Promise<Booking & { passengers?: any[]; payments?: any[]; tripDetails?: any; originStop?: any; destinationStop?: any; departAt?: any }> {
     const booking = await this.storage.getBookingById(id);
     if (!booking) {
       throw new Error(`Booking with id ${id} not found`);
     }
     
     // Fetch all related data in parallel for better performance
-    const [passengers, payments, trip] = await Promise.all([
+    const [passengers, payments, trip, tripStopTimes] = await Promise.all([
       this.storage.getPassengers(booking.id),
       this.storage.getPayments(booking.id),
-      this.storage.getTripById(booking.tripId)
+      this.storage.getTripById(booking.tripId),
+      this.storage.getTripStopTimes(booking.tripId)
     ]);
     
     // Fetch stop details in parallel if origin/destination stop IDs exist
@@ -43,13 +44,23 @@ export class BookingsService {
       ]);
     }
     
+    // Find the departure time from trip stop times based on origin sequence
+    let departAt = null;
+    if (tripStopTimes && booking.originSeq) {
+      const originStopTime = tripStopTimes.find(st => st.stopSequence === booking.originSeq);
+      if (originStopTime && originStopTime.departAt) {
+        departAt = originStopTime.departAt;
+      }
+    }
+    
     return {
       ...booking,
       passengers: passengers || [],
       payments: payments || [],
       tripDetails: trip,
       originStop,
-      destinationStop
+      destinationStop,
+      departAt
     };
   }
 

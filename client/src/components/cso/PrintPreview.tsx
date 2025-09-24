@@ -99,7 +99,7 @@ export default function PrintPreview({
                 </div>
                 <div className="flex justify-between">
                   <span>Service Date:</span>
-                  <span>{booking.trip?.serviceDate ? new Date(booking.trip.serviceDate).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'N/A'}</span>
+                  <span>{booking.tripDetails?.serviceDate ? new Date(booking.tripDetails.serviceDate).toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' }) : 'N/A'}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Departure:</span>
