@@ -217,3 +217,97 @@ curl -X POST http://localhost:5000/api/seed
 # 1. Navigate to http://localhost:5000/cso
 # 2. Follow guided workflow
 # 3. Complete booking end-to-end
+
+## 📋 Virtual Scheduling (Trip Bases) - Audit Round
+
+### Schema & Migrations
+- ✅ **trip_bases table created** with required fields
+  - *Verified: All required fields exist in shared/schema.ts*
+  - *Location: shared/schema.ts lines 95-125*
+  - *Demo: Includes pattern, DOW flags, timezone, defaultStopTimes, etc.*
+
+- ✅ **trips.baseId + partial unique index**
+  - *Verified: baseId field exists with proper FK constraint*
+  - *Location: shared/schema.ts lines 137, 141*
+  - *Demo: Unique constraint on (base_id, service_date) WHERE base_id IS NOT NULL*
+
+### Backend
+- ✅ **Trip Bases CRUD + validations** (POST/PUT/DELETE/GET)
+  - *Verified: Full CRUD with validation in place*
+  - *Location: server/modules/tripBases/*
+  - *Demo: Includes monotonic time validation, DOW checks*
+
+- ✅ **/api/cso/available-trips** union + isVirtual + dedup + outlet boarding filter
+  - *Verified: Complex implementation in storage.ts*
+  - *Location: server/storage.ts getCsoAvailableTrips method*
+  - *Demo: Combines real + virtual trips with proper dedup logic*
+
+- ✅ **/api/cso/materialize-trip** idempotent + legs + inventory
+  - *Verified: Race-safe implementation with unique constraint handling*
+  - *Location: server/modules/tripBases/tripBases.service.ts ensureMaterializedTrip*
+  - *Demo: Handles duplicate creation attempts gracefully*
+
+- ✅ **/api/trips/:id/close** sets closed, releases holds
+  - *Verified: Updates status and releases holds*
+  - *Location: server/modules/tripBases/tripBases.service.ts closeTrip*
+  - *Demo: Status update + hold cleanup*
+
+- ❌ **Realtime emit** events (TRIP_MATERIALIZED, TRIP_STATUS_CHANGED, etc.)
+  - *Missing: No WebSocket or SSE implementation*
+  - *Location: TODO comments exist in service files*
+  - *Gap: Polling used instead of realtime events*
+
+### Frontend
+- ✅ **Masters → Trip Bases** (List + Create/Edit/Delete with BaseDialog)
+  - *Verified: Full CRUD UI with proper validation*
+  - *Location: client/src/components/masters/TripBasesManager.tsx*
+  - *Demo: DOW badges, time inputs, pattern selection*
+
+- 🔁 **CSO list: Virtual & Closed badges**, disabled actions for Closed
+  - *Partially: Basic TripSelector exists but needs badge implementation*
+  - *Location: client/src/components/cso/TripSelector.tsx*
+  - *Gap: Need to add Virtual/Closed badge display logic*
+
+- ✅ **Materialize flow** from Virtual → navigate to Real seatmap
+  - *Verified: API endpoint exists and should work*
+  - *Location: API call structure in place*
+  - *Gap: Frontend integration needs verification*
+
+- ❌ **Seatmap locks on closed** (realtime/polling)
+  - *Missing: No realtime implementation*
+  - *Location: client/src/components/cso/SeatMap.tsx*
+  - *Gap: Only 30s polling exists, no realtime lock*
+
+### Seeder
+- ❌ **JKT/PWK/BDG stops + outlets** with pickup-only PWK
+  - *Partially: Stops exist but PWK not pickup-only*
+  - *Location: server/seed.ts*
+  - *Gap: PWK needs boardingAllowed=true, alightingAllowed=false*
+
+- ❌ **Layouts 12/8, Vehicles BUS-A/B**
+  - *Partially: Only one 12-seat layout exists*
+  - *Location: server/seed.ts*
+  - *Gap: Missing 8-seat layout and BUS-B vehicle*
+
+- ❌ **Pattern AB_via_C** (pickup-only at PWK)
+  - *Partially: Pattern exists but not with pickup-only config*
+  - *Location: server/seed.ts*
+  - *Gap: Pattern stops need proper boarding/alighting flags*
+
+- ❌ **Trip Bases** (10:00 Slot-1, 10:00 Slot-2, 13:00 Slot-1)
+  - *Missing: No trip bases in seed data*
+  - *Location: server/seed.ts*
+  - *Gap: Need to add trip bases with proper time slots*
+
+### Summary Status
+- ✅ **Core backend infrastructure**: 80% complete
+- 🔁 **Frontend integration**: 60% complete  
+- ❌ **Realtime functionality**: 0% complete
+- ❌ **Complete seed data**: 30% complete
+
+### Immediate Actions Required
+1. Add complete seed data with trip bases and proper pickup-only configuration
+2. Implement WebSocket realtime events system
+3. Add Virtual/Closed badges to CSO TripSelector
+4. Test and fix materialize flow integration
+5. Add seatmap realtime locking on trip closure

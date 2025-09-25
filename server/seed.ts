@@ -15,7 +15,7 @@ export async function seedData() {
     code: "PWK", 
     name: "Purwakarta",
     city: "Purwakarta",
-    isOutlet: false
+    isOutlet: true  // Make it an outlet for pickup-only testing
   });
 
   const bandungStop = await storage.createStop({
@@ -64,6 +64,13 @@ export async function seedData() {
   });
 
   await storage.createOutlet({
+    stopId: purwakartaStop.id,
+    name: "Purwakarta Outlet",
+    address: "Jl. Veteran Purwakarta", 
+    phone: "+62-264-1234567"
+  });
+
+  await storage.createOutlet({
     stopId: semarangStop.id,
     name: "Semarang Outlet",
     address: "Jl. Kh Dewantara Semarang", 
@@ -72,8 +79,8 @@ export async function seedData() {
 
   console.log("✅ Outlets created");
 
-  // Create layout
-  const layout = await storage.createLayout({
+  // Create layouts (12-seat and 8-seat)
+  const layout12 = await storage.createLayout({
     name: "Standard 12-seat",
     rows: 3,
     cols: 4,
@@ -93,25 +100,49 @@ export async function seedData() {
     ]
   });
 
-  console.log("✅ Layout created");
+  const layout8 = await storage.createLayout({
+    name: "Standard 8-seat",
+    rows: 2,
+    cols: 4,
+    seatMap: [
+      { seat_no: "1A", row: 1, col: 1, class: "standard" },
+      { seat_no: "1B", row: 1, col: 2, class: "standard" },
+      { seat_no: "1C", row: 1, col: 3, class: "standard" },
+      { seat_no: "1D", row: 1, col: 4, class: "standard" },
+      { seat_no: "2A", row: 2, col: 1, class: "standard" },
+      { seat_no: "2B", row: 2, col: 2, class: "standard" },
+      { seat_no: "2C", row: 2, col: 3, class: "standard" },
+      { seat_no: "2D", row: 2, col: 4, class: "standard" }
+    ]
+  });
 
-  // Create vehicle
-  const vehicle = await storage.createVehicle({
-    code: "BUS-001",
+  console.log("✅ Layouts created");
+
+  // Create vehicles (BUS-A with 12-seat, BUS-B with 8-seat)
+  const vehicleA = await storage.createVehicle({
+    code: "BUS-A",
     plate: "B 1234 ABC",
-    layoutId: layout.id,
+    layoutId: layout12.id,
     capacity: 12,
-    notes: "Demo vehicle"
+    notes: "12-seat vehicle for Slot-1"
+  });
+
+  const vehicleB = await storage.createVehicle({
+    code: "BUS-B", 
+    plate: "B 5678 DEF",
+    layoutId: layout8.id,
+    capacity: 8,
+    notes: "8-seat vehicle for Slot-2"
   });
   
-  console.log("✅ Vehicle created");
+  console.log("✅ Vehicles created");
 
   // Create trip pattern
   const pattern = await storage.createTripPattern({
     code: "AB_via_C",
     name: "Jakarta to Bandung via Purwakarta",
     vehicleClass: "standard",
-    defaultLayoutId: layout.id,
+    defaultLayoutId: layout12.id,
     active: true,
     tags: ["intercity", "demo"]
   });
@@ -148,13 +179,13 @@ export async function seedData() {
 
   console.log("✅ Pattern stops created");
 
-  // Create trip for today
+  // Create trip for today (using vehicleA for demo)
   const today = new Date().toISOString().split('T')[0];
   const trip = await storage.createTrip({
     patternId: pattern.id,
     serviceDate: today,
-    vehicleId: vehicle.id,
-    layoutId: layout.id,
+    vehicleId: vehicleA.id,
+    layoutId: layout12.id,
     capacity: 12,
     status: 'scheduled',
     channelFlags: { CSO: true, WEB: false, APP: false, OTA: false }
@@ -231,6 +262,87 @@ export async function seedData() {
   });
 
   console.log("✅ Price rule created");
+
+  // Create Trip Bases for Virtual Scheduling
+  const tripBase1 = await storage.createTripBase({
+    patternId: pattern.id,
+    code: "10:00-SLOT-1",
+    name: "Jakarta-Bandung 10:00 Slot-1 (12-seat)",
+    active: true,
+    timezone: "Asia/Jakarta",
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+    validFrom: "2025-01-01",
+    validTo: "2025-12-31",
+    defaultLayoutId: layout12.id,
+    defaultVehicleId: vehicleA.id,
+    capacity: 12,
+    channelFlags: { CSO: true, WEB: true, APP: true, OTA: false },
+    defaultStopTimes: [
+      { stopSequence: 1, arriveAt: null, departAt: "10:00" },
+      { stopSequence: 2, arriveAt: "10:55", departAt: "11:00" },
+      { stopSequence: 3, arriveAt: "12:00", departAt: null }
+    ]
+  });
+
+  const tripBase2 = await storage.createTripBase({
+    patternId: pattern.id,
+    code: "10:00-SLOT-2",
+    name: "Jakarta-Bandung 10:00 Slot-2 (8-seat)",
+    active: true,
+    timezone: "Asia/Jakarta",
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+    validFrom: "2025-01-01",
+    validTo: "2025-12-31",
+    defaultLayoutId: layout8.id,
+    defaultVehicleId: vehicleB.id,
+    capacity: 8,
+    channelFlags: { CSO: true, WEB: true, APP: true, OTA: false },
+    defaultStopTimes: [
+      { stopSequence: 1, arriveAt: null, departAt: "10:00" },
+      { stopSequence: 2, arriveAt: "10:55", departAt: "11:00" },
+      { stopSequence: 3, arriveAt: "12:00", departAt: null }
+    ]
+  });
+
+  const tripBase3 = await storage.createTripBase({
+    patternId: pattern.id,
+    code: "13:00-SLOT-1",
+    name: "Jakarta-Bandung 13:00 Slot-1 (12-seat)",
+    active: true,
+    timezone: "Asia/Jakarta",
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+    validFrom: "2025-01-01",
+    validTo: "2025-12-31",
+    defaultLayoutId: layout12.id,
+    defaultVehicleId: vehicleA.id,
+    capacity: 12,
+    channelFlags: { CSO: true, WEB: true, APP: true, OTA: false },
+    defaultStopTimes: [
+      { stopSequence: 1, arriveAt: null, departAt: "13:00" },
+      { stopSequence: 2, arriveAt: "13:55", departAt: "14:00" },
+      { stopSequence: 3, arriveAt: "15:00", departAt: null }
+    ]
+  });
+
+  console.log("✅ Trip Bases created");
   console.log("🎉 Seed data creation completed!");
 }
 
