@@ -1,14 +1,14 @@
 import { IStorage } from "./routes";
 import { 
-  stops, outlets, vehicles, layouts, tripPatterns, patternStops, 
+  stops, outlets, vehicles, layouts, tripPatterns, patternStops, tripBases,
   trips, tripStopTimes, tripLegs, seatInventory, seatHolds, priceRules, 
   bookings, passengers, payments, printJobs,
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
-  type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
+  type PatternStop, type TripBase, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
   type SeatInventory, type PriceRule, type Booking, type Passenger, 
   type Payment, type PrintJob, type CsoAvailableTrip,
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
-  type InsertTripPattern, type InsertPatternStop, type InsertTrip,
+  type InsertTripPattern, type InsertPatternStop, type InsertTripBase, type InsertTrip,
   type InsertTripStopTime, type InsertTripLeg, type InsertSeatInventory,
   type InsertPriceRule, type InsertBooking, type InsertPassenger,
   type InsertPayment, type InsertPrintJob
@@ -175,6 +175,30 @@ export class DatabaseStorage implements IStorage {
     return result;
   }
 
+  // Trip Bases
+  async getTripBases(): Promise<TripBase[]> {
+    return await db.select().from(tripBases).orderBy(tripBases.name);
+  }
+
+  async getTripBaseById(id: string): Promise<TripBase | undefined> {
+    const [base] = await db.select().from(tripBases).where(eq(tripBases.id, id));
+    return base;
+  }
+
+  async createTripBase(data: InsertTripBase): Promise<TripBase> {
+    const [base] = await db.insert(tripBases).values(data).returning();
+    return base;
+  }
+
+  async updateTripBase(id: string, data: Partial<InsertTripBase>): Promise<TripBase> {
+    const [base] = await db.update(tripBases).set(data).where(eq(tripBases.id, id)).returning();
+    return base;
+  }
+
+  async deleteTripBase(id: string): Promise<void> {
+    await db.delete(tripBases).where(eq(tripBases.id, id));
+  }
+
   // Trips
   async getTrips(serviceDate?: string): Promise<TripWithDetails[]> {
     const query = db.select({
@@ -186,6 +210,8 @@ export class DatabaseStorage implements IStorage {
       capacity: trips.capacity,
       status: trips.status,
       channelFlags: trips.channelFlags,
+      baseId: trips.baseId,
+      originDepartHHMM: trips.originDepartHHMM,
       createdAt: trips.createdAt,
       // Joined fields
       patternName: tripPatterns.name,
@@ -216,9 +242,38 @@ export class DatabaseStorage implements IStorage {
       throw new Error(`Outlet with id ${outletId} not found`);
     }
 
-    // Build the complex query to find trips that serve this outlet's stop with boarding allowed
+    // Get real trips
+    const realTrips = await this.getRealTripsForCso(serviceDate, outlet.stopId);
+    
+    // Get virtual trips (computed from trip bases)
+    const virtualTrips = await this.getVirtualTripsForCso(serviceDate, outlet.stopId);
+    
+    // Combine results and deduplicate (real trips override virtual ones)
+    const baseIdsWithRealTrips = new Set(
+      realTrips.filter(trip => trip.baseId).map(trip => trip.baseId!)
+    );
+    
+    // Filter out virtual trips that have corresponding real trips
+    const filteredVirtualTrips = virtualTrips.filter(
+      trip => !baseIdsWithRealTrips.has(trip.baseId!)
+    );
+    
+    // Combine and sort by departure time
+    const allTrips = [...realTrips, ...filteredVirtualTrips];
+    
+    return allTrips.sort((a, b) => {
+      if (!a.departAtAtOutlet && !b.departAtAtOutlet) return 0;
+      if (!a.departAtAtOutlet) return 1;
+      if (!b.departAtAtOutlet) return -1;
+      return new Date(a.departAtAtOutlet).getTime() - new Date(b.departAtAtOutlet).getTime();
+    });
+  }
+
+  private async getRealTripsForCso(serviceDate: string, outletStopId: string): Promise<CsoAvailableTrip[]> {
+    // Build the complex query to find real trips that serve this outlet's stop with boarding allowed
     const result = await db.select({
       tripId: trips.id,
+      baseId: trips.baseId,
       patternCode: tripPatterns.code,
       vehicleCode: vehicles.code,
       vehiclePlate: vehicles.plate,
@@ -228,7 +283,7 @@ export class DatabaseStorage implements IStorage {
         SELECT tst.depart_at 
         FROM ${tripStopTimes} tst 
         WHERE tst.trip_id = ${trips.id} 
-        AND tst.stop_id = ${outlet.stopId}
+        AND tst.stop_id = ${outletStopId}
       )`.as('depart_at_outlet'),
       finalArrivalAt: sql<string>`(
         SELECT tst.arrive_at 
@@ -251,7 +306,7 @@ export class DatabaseStorage implements IStorage {
     })
     .from(trips)
     .innerJoin(tripPatterns, eq(trips.patternId, tripPatterns.id))
-    .innerJoin(vehicles, eq(trips.vehicleId, vehicles.id))
+    .leftJoin(vehicles, eq(trips.vehicleId, vehicles.id))
     .where(
       and(
         eq(trips.serviceDate, serviceDate),
@@ -262,7 +317,7 @@ export class DatabaseStorage implements IStorage {
           FROM ${tripStopTimes} tst
           LEFT JOIN ${patternStops} ps ON ps.pattern_id = ${trips.patternId} AND ps.stop_id = tst.stop_id
           WHERE tst.trip_id = ${trips.id} 
-          AND tst.stop_id = ${outlet.stopId}
+          AND tst.stop_id = ${outletStopId}
           AND COALESCE(tst.boarding_allowed, ps.boarding_allowed, true) = true
           AND tst.stop_sequence < (
             SELECT MAX(tst2.stop_sequence) 
@@ -271,24 +326,133 @@ export class DatabaseStorage implements IStorage {
           )
         )`
       )
-    )
-    .orderBy(sql`depart_at_outlet ASC NULLS LAST`);
+    );
 
     // Transform the result to match the expected format
     return result.map(row => ({
       tripId: row.tripId,
+      baseId: row.baseId || undefined,
+      isVirtual: false,
       patternCode: row.patternCode,
       patternPath: row.patternStops || 'Unknown Route',
-      vehicle: {
+      vehicle: row.vehicleCode && row.vehiclePlate ? {
         code: row.vehicleCode,
         plate: row.vehiclePlate
-      },
+      } : null,
       capacity: row.capacity,
-      status: row.status || 'scheduled',
+      status: (row.status || 'scheduled') as any,
       departAtAtOutlet: row.departAtOutlet,
       finalArrivalAt: row.finalArrivalAt,
       stopCount: row.stopCount
     }));
+  }
+
+  private async getVirtualTripsForCso(serviceDate: string, outletStopId: string): Promise<CsoAvailableTrip[]> {
+    // Get all eligible trip bases for this date
+    const eligibleBases = await this.getEligibleTripBases(serviceDate);
+    
+    const virtualTrips: CsoAvailableTrip[] = [];
+    
+    for (const base of eligibleBases) {
+      try {
+        // Check if this base serves the outlet stop
+        const pattern = await this.getTripPatternById(base.patternId);
+        if (!pattern) continue;
+        
+        const patternStopsForBase = await this.getPatternStops(base.patternId);
+        const outletStop = patternStopsForBase.find(ps => ps.stopId === outletStopId);
+        
+        // Skip if this pattern doesn't serve the outlet stop or boarding not allowed
+        if (!outletStop || !outletStop.boardingAllowed) continue;
+        
+        // Skip if outlet stop is the final destination
+        const maxSequence = Math.max(...patternStopsForBase.map(ps => ps.stopSequence));
+        if (outletStop.stopSequence >= maxSequence) continue;
+        
+        // Compute times for this virtual trip
+        const { departAtOutlet, finalArrivalAt } = this.computeVirtualTripTimes(
+          base, serviceDate, outletStop.stopSequence, maxSequence
+        );
+        
+        // Get pattern path
+        const patternPath = await this.getPatternPath(base.patternId);
+        
+        virtualTrips.push({
+          baseId: base.id,
+          isVirtual: true,
+          patternCode: pattern.code,
+          patternPath,
+          vehicle: null, // Virtual trips don't have vehicles assigned yet
+          capacity: base.capacity,
+          status: 'scheduled',
+          departAtAtOutlet,
+          finalArrivalAt,
+          stopCount: patternStopsForBase.length
+        });
+      } catch (error) {
+        // Skip this base if there's an error (e.g., invalid default times)
+        console.warn(`Skipping virtual trip for base ${base.id}:`, error);
+        continue;
+      }
+    }
+    
+    return virtualTrips;
+  }
+
+  private async getEligibleTripBases(serviceDate: string): Promise<TripBase[]> {
+    const serviceDateObj = new Date(serviceDate);
+    const dayOfWeek = serviceDateObj.getDay(); // 0 = Sunday, 1 = Monday, etc.
+    const dayColumns = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    const dayColumn = dayColumns[dayOfWeek];
+    
+    return await db.select().from(tripBases)
+      .where(
+        and(
+          eq(tripBases.active, true),
+          sql`${tripBases[dayColumn as keyof typeof tripBases]} = true`,
+          sql`(${tripBases.validFrom} IS NULL OR ${tripBases.validFrom} <= ${serviceDate})`,
+          sql`(${tripBases.validTo} IS NULL OR ${serviceDate} <= ${tripBases.validTo})`
+        )
+      );
+  }
+
+  private computeVirtualTripTimes(base: TripBase, serviceDate: string, outletSequence: number, maxSequence: number): {
+    departAtOutlet: string | null;
+    finalArrivalAt: string | null;
+  } {
+    const defaultStopTimes = base.defaultStopTimes as any[];
+    
+    // Find departure time at outlet
+    const outletTime = defaultStopTimes.find(st => st.stopSequence === outletSequence);
+    const finalTime = defaultStopTimes.find(st => st.stopSequence === maxSequence);
+    
+    let departAtOutlet = null;
+    let finalArrivalAt = null;
+    
+    if (outletTime?.departAt) {
+      const departDateTime = `${serviceDate}T${outletTime.departAt}`;
+      departAtOutlet = new Date(departDateTime).toISOString();
+    }
+    
+    if (finalTime?.arriveAt) {
+      const arrivalDateTime = `${serviceDate}T${finalTime.arriveAt}`;
+      finalArrivalAt = new Date(arrivalDateTime).toISOString();
+    }
+    
+    return { departAtOutlet, finalArrivalAt };
+  }
+
+  private async getPatternPath(patternId: string): Promise<string> {
+    const result = await db.select({
+      patternStops: sql<string>`(
+        SELECT STRING_AGG(s.name, ' → ' ORDER BY ps.stop_sequence)
+        FROM ${patternStops} ps
+        JOIN ${stops} s ON ps.stop_id = s.id
+        WHERE ps.pattern_id = ${patternId}
+      )`
+    });
+    
+    return result[0]?.patternStops || 'Unknown Route';
   }
 
   async getTripById(id: string): Promise<Trip | undefined> {
@@ -541,6 +705,29 @@ export class DatabaseStorage implements IStorage {
         inArray(bookings.status, ['pending', 'paid'])
       ));
     return result.count > 0;
+  }
+
+  // Get trip by base and service date
+  async getTripByBaseAndDate(baseId: string, serviceDate: string): Promise<Trip | undefined> {
+    const [trip] = await db.select().from(trips)
+      .where(and(
+        eq(trips.baseId, baseId),
+        eq(trips.serviceDate, serviceDate)
+      ));
+    return trip;
+  }
+
+  // Release all holds for a trip (used when closing a trip)
+  async releaseHoldsForTrip(tripId: string): Promise<void> {
+    // Update seat inventory to remove hold references
+    await db.update(seatInventory)
+      .set({ holdRef: null })
+      .where(eq(seatInventory.tripId, tripId));
+    
+    // Mark holds as expired (soft delete)
+    await db.update(seatHolds)
+      .set({ expiresAt: new Date() })
+      .where(eq(seatHolds.tripId, tripId));
   }
 }
 

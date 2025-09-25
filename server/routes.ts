@@ -3,15 +3,15 @@ import { createServer, type Server } from "http";
 import { z } from "zod";
 import { 
   insertStopSchema, insertOutletSchema, insertVehicleSchema, insertLayoutSchema,
-  insertTripPatternSchema, insertPatternStopSchema, insertTripSchema,
+  insertTripPatternSchema, insertPatternStopSchema, insertTripBaseSchema, insertTripSchema,
   insertTripStopTimeSchema, insertPriceRuleSchema, insertBookingSchema,
   insertPassengerSchema, insertPaymentSchema,
   type Stop, type Outlet, type Vehicle, type Layout, type TripPattern, 
-  type PatternStop, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
+  type PatternStop, type TripBase, type Trip, type TripWithDetails, type TripStopTime, type TripLeg, 
   type SeatInventory, type PriceRule, type Booking, type Passenger, 
   type Payment, type PrintJob,
   type InsertStop, type InsertOutlet, type InsertVehicle, type InsertLayout,
-  type InsertTripPattern, type InsertPatternStop, type InsertTrip,
+  type InsertTripPattern, type InsertPatternStop, type InsertTripBase, type InsertTrip,
   type InsertTripStopTime, type InsertPriceRule, type InsertBooking,
   type InsertPassenger, type InsertPayment, type InsertPrintJob,
   type CsoAvailableTrip
@@ -59,6 +59,13 @@ export interface IStorage {
   updatePatternStop(id: string, data: Partial<InsertPatternStop>): Promise<PatternStop>;
   deletePatternStop(id: string): Promise<void>;
   bulkReplacePatternStops(patternId: string, patternStops: InsertPatternStop[]): Promise<PatternStop[]>;
+
+  // Trip Bases
+  getTripBases(): Promise<TripBase[]>;
+  getTripBaseById(id: string): Promise<TripBase | undefined>;
+  createTripBase(data: InsertTripBase): Promise<TripBase>;
+  updateTripBase(id: string, data: Partial<InsertTripBase>): Promise<TripBase>;
+  deleteTripBase(id: string): Promise<void>;
 
   // Trips
   getTrips(serviceDate?: string): Promise<TripWithDetails[]>;
@@ -112,6 +119,8 @@ export interface IStorage {
 
   // Utility
   tripHasBookings(tripId: string): Promise<boolean>;
+  getTripByBaseAndDate(baseId: string, serviceDate: string): Promise<Trip | undefined>;
+  releaseHoldsForTrip(tripId: string): Promise<void>;
 }
 
 import { storage } from "./storage";

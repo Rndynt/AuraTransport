@@ -92,6 +92,38 @@ export const patternStops = pgTable("pattern_stops", {
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
 });
 
+// 6a. Trip Bases (Virtual scheduling templates)
+export const tripBases = pgTable("trip_bases", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  patternId: uuid("pattern_id").notNull().references(() => tripPatterns.id),
+  code: text("code").unique(),
+  name: text("name").notNull(),
+  active: boolean("active").notNull().default(true),
+  timezone: text("timezone").notNull().default('Asia/Jakarta'),
+  // Days of operation
+  mon: boolean("mon").notNull().default(true),
+  tue: boolean("tue").notNull().default(true),
+  wed: boolean("wed").notNull().default(true),
+  thu: boolean("thu").notNull().default(true),
+  fri: boolean("fri").notNull().default(true),
+  sat: boolean("sat").notNull().default(true),
+  sun: boolean("sun").notNull().default(true),
+  validFrom: date("valid_from"),
+  validTo: date("valid_to"),
+  defaultLayoutId: uuid("default_layout_id").references(() => layouts.id),
+  defaultVehicleId: uuid("default_vehicle_id").references(() => vehicles.id),
+  capacity: integer("capacity"),
+  channelFlags: jsonb("channel_flags").notNull().default(sql`'{"CSO":true,"WEB":false,"APP":false,"OTA":false}'`),
+  // Default stop times as local time strings without date
+  defaultStopTimes: jsonb("default_stop_times").notNull(),
+  createdAt: timestamp("created_at", { withTimezone: true }).defaultNow(),
+  updatedAt: timestamp("updated_at", { withTimezone: true }).defaultNow()
+}, (table) => ({
+  idxTripBasesActive: sql`CREATE INDEX IF NOT EXISTS idx_trip_bases_active ON ${table} (active)`,
+  idxTripBasesPattern: sql`CREATE INDEX IF NOT EXISTS idx_trip_bases_pattern ON ${table} (pattern_id)`,
+  idxTripBasesValid: sql`CREATE INDEX IF NOT EXISTS idx_trip_bases_valid ON ${table} (valid_from, valid_to)`
+}));
+
 // 7. Trips
 export const trips = pgTable("trips", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
@@ -102,8 +134,12 @@ export const trips = pgTable("trips", {
   capacity: integer("capacity").notNull(),
   status: tripStatusEnum("status").default('scheduled'),
   channelFlags: jsonb("channel_flags").default(sql`'{"CSO":true,"WEB":false,"APP":false,"OTA":false}'`),
+  baseId: uuid("base_id").references(() => tripBases.id),
+  originDepartHHMM: text("origin_depart_hhmm"),
   createdAt: timestamp("created_at", { withTimezone: true }).defaultNow()
-});
+}, (table) => ({
+  uniqTripBasePerDay: sql`CREATE UNIQUE INDEX IF NOT EXISTS uniq_trip_base_per_day ON ${table} (base_id, service_date) WHERE base_id IS NOT NULL`
+}));
 
 // 8. Trip Stop Times
 export const tripStopTimes = pgTable("trip_stop_times", {
@@ -257,10 +293,18 @@ export const patternStopsRelations = relations(patternStops, ({ one }) => ({
   stop: one(stops, { fields: [patternStops.stopId], references: [stops.id] })
 }));
 
+export const tripBasesRelations = relations(tripBases, ({ one, many }) => ({
+  pattern: one(tripPatterns, { fields: [tripBases.patternId], references: [tripPatterns.id] }),
+  defaultLayout: one(layouts, { fields: [tripBases.defaultLayoutId], references: [layouts.id] }),
+  defaultVehicle: one(vehicles, { fields: [tripBases.defaultVehicleId], references: [vehicles.id] }),
+  trips: many(trips)
+}));
+
 export const tripsRelations = relations(trips, ({ one, many }) => ({
   pattern: one(tripPatterns, { fields: [trips.patternId], references: [tripPatterns.id] }),
   vehicle: one(vehicles, { fields: [trips.vehicleId], references: [vehicles.id] }),
   layout: one(layouts, { fields: [trips.layoutId], references: [layouts.id] }),
+  base: one(tripBases, { fields: [trips.baseId], references: [tripBases.id] }),
   tripStopTimes: many(tripStopTimes),
   tripLegs: many(tripLegs),
   seatInventory: many(seatInventory),
@@ -317,6 +361,7 @@ export const insertLayoutSchema = createInsertSchema(layouts).omit({ id: true, c
 export const insertVehicleSchema = createInsertSchema(vehicles).omit({ id: true, createdAt: true });
 export const insertTripPatternSchema = createInsertSchema(tripPatterns).omit({ id: true, createdAt: true });
 export const insertPatternStopSchema = createInsertSchema(patternStops).omit({ id: true, createdAt: true });
+export const insertTripBaseSchema = createInsertSchema(tripBases).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertTripSchema = createInsertSchema(trips).omit({ id: true, createdAt: true });
 export const insertTripStopTimeSchema = createInsertSchema(tripStopTimes).omit({ id: true });
 export const insertTripLegSchema = createInsertSchema(tripLegs).omit({ id: true });
@@ -334,6 +379,7 @@ export type Layout = typeof layouts.$inferSelect;
 export type Vehicle = typeof vehicles.$inferSelect;
 export type TripPattern = typeof tripPatterns.$inferSelect;
 export type PatternStop = typeof patternStops.$inferSelect;
+export type TripBase = typeof tripBases.$inferSelect;
 export type Trip = typeof trips.$inferSelect;
 // Extended Trip type with joined data for display
 export type TripWithDetails = Trip & {
@@ -344,16 +390,18 @@ export type TripWithDetails = Trip & {
   scheduleTime?: string | null;
 };
 
-// CSO Available Trip type for filtered trips by outlet
+// CSO Available Trip type for filtered trips by outlet (updated for virtual scheduling)
 export type CsoAvailableTrip = {
-  tripId: string;
+  tripId?: string;                 // present if real
+  baseId?: string;                 // present if virtual (and also present for real trip that came from a base)
+  isVirtual: boolean;              // true for base-derived items (no real trip yet)
   patternCode: string;
-  patternPath: string;
-  vehicle: { code: string; plate: string };
-  capacity: number;
-  status: string;
-  departAtAtOutlet: string | null;
-  finalArrivalAt: string | null;
+  patternPath: string;             // "A → C → B"
+  vehicle: { code?: string; plate?: string } | null;
+  capacity: number | null;
+  status: "scheduled" | "canceled" | "closed" | "draft" | "unknown";
+  departAtAtOutlet: string | null; // ISO if real; or computed from base if virtual
+  finalArrivalAt: string | null;   // ISO if real; or computed from base if virtual
   stopCount: number;
 };
 
@@ -416,6 +464,7 @@ export type InsertLayout = z.infer<typeof insertLayoutSchema>;
 export type InsertVehicle = z.infer<typeof insertVehicleSchema>;
 export type InsertTripPattern = z.infer<typeof insertTripPatternSchema>;
 export type InsertPatternStop = z.infer<typeof insertPatternStopSchema>;
+export type InsertTripBase = z.infer<typeof insertTripBaseSchema>;
 export type InsertTrip = z.infer<typeof insertTripSchema>;
 export type InsertTripStopTime = z.infer<typeof insertTripStopTimeSchema>;
 export type InsertTripLeg = z.infer<typeof insertTripLegSchema>;
