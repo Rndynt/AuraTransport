@@ -452,8 +452,7 @@ export class DatabaseStorage implements IStorage {
       )`
     });
     
-    const firstRow = result[0];
-    return firstRow?.patternStops || 'Unknown Route';
+    return result.length > 0 ? (result[0] as any).patternStops || 'Unknown Route' : 'Unknown Route';
   }
 
   async getTripById(id: string): Promise<Trip | undefined> {
