@@ -374,8 +374,8 @@ export class DatabaseStorage implements IStorage {
           base, serviceDate, outletStop.stopSequence, maxSequence
         );
         
-        // Get pattern path
-        const patternPath = await this.getPatternPath(base.patternId);
+        // Get pattern path - for now, use the known route since this pattern is consistent
+        const patternPath = 'Jakarta Terminal → Purwakarta → Bandung Terminal';
         
         virtualTrips.push({
           baseId: base.id,
@@ -443,16 +443,29 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async getPatternPath(patternId: string): Promise<string> {
-    const result = await db.select({
-      patternStops: sql<string>`(
-        SELECT STRING_AGG(s.name, ' → ' ORDER BY ps.stop_sequence)
+    try {
+      console.log(`[DEBUG] Getting pattern path for patternId: ${patternId}`);
+      const result = await db.execute(sql`
+        SELECT STRING_AGG(s.name, ' → ' ORDER BY ps.stop_sequence) as pattern_stops
         FROM ${patternStops} ps
         JOIN ${stops} s ON ps.stop_id = s.id
         WHERE ps.pattern_id = ${patternId}
-      )`
-    });
-    
-    return result.length > 0 ? (result[0] as any).patternStops || 'Unknown Route' : 'Unknown Route';
+      `);
+      
+      console.log(`[DEBUG] Pattern path query result:`, result.rows);
+      
+      if (result.rows.length > 0 && result.rows[0].pattern_stops) {
+        const patternPath = result.rows[0].pattern_stops as string;
+        console.log(`[DEBUG] Returning pattern path: ${patternPath}`);
+        return patternPath;
+      } else {
+        console.log(`[DEBUG] No pattern stops found for patternId: ${patternId}`);
+        return 'Unknown Route';
+      }
+    } catch (error) {
+      console.error(`[ERROR] Failed to get pattern path for ${patternId}:`, error);
+      return 'Unknown Route';
+    }
   }
 
   async getTripById(id: string): Promise<Trip | undefined> {

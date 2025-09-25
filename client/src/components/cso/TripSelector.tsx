@@ -251,72 +251,111 @@ export default function TripSelector({
               <p className="text-sm text-muted-foreground mt-1">Try another date or outlet</p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {trips.map(trip => {
-                const disabled = isTripDisabled(trip);
-                const isSelected = selectedTrip?.tripId === trip.tripId || 
-                                 (trip.isVirtual && selectedTrip?.baseId === trip.baseId);
-                
-                return (
-                  <div
-                    key={trip.tripId || trip.baseId}
-                    className={`p-3 border rounded-lg transition-colors ${
-                      disabled 
-                        ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
-                        : isSelected
-                          ? 'border-primary bg-primary/5 cursor-pointer'
-                          : 'border-border hover:border-primary/50 cursor-pointer'
-                    }`}
-                    onClick={() => !disabled && handleTripSelect(trip)}
-                    data-testid={`trip-${trip.tripId || trip.baseId}`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div className="min-w-0 flex-1">
-                        <div className="flex items-center gap-2 mb-2">
-                          <p className="font-medium text-sm">
-                            {trip.patternPath || `Route ${trip.patternCode || 'Unknown'}`}
-                          </p>
-                          <div className="flex gap-1 flex-wrap">
-                            {getTripBadges(trip)}
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {trip.departAtAtOutlet ? new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit', hour12: false, timeZone: 'Asia/Jakarta' }) : 'Time not set'} • 
-                          {trip.capacity} seats
-                        </p>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          Vehicle: {trip.vehicle?.code || 'Unknown'} ({trip.vehicle?.plate || 'Unknown'})
-                        </p>
-                      </div>
-                      <Button 
-                        variant={isSelected ? "default" : "outline"}
-                        size="sm"
-                        className="ml-2 shrink-0"
-                        disabled={disabled || materializeMutation.isPending}
-                        data-testid={`select-trip-${trip.tripId || trip.baseId}`}
-                      >
-                        {materializeMutation.isPending && trip.isVirtual ? (
-                          <>
-                            <Loader2 className="w-3 h-3 mr-1 animate-spin" />
-                            Materializing...
-                          </>
-                        ) : disabled ? (
-                          'Unavailable'
-                        ) : trip.isVirtual ? (
-                          <>
-                            <Play className="w-3 h-3 mr-1" />
-                            Materialize
-                          </>
-                        ) : isSelected ? (
-                          'Selected'
-                        ) : (
-                          'Select'
-                        )}
-                      </Button>
-                    </div>
+            <div className="space-y-4">
+              {/* Group trips by route */}
+              {Object.entries(
+                trips.reduce((groups: Record<string, CsoAvailableTrip[]>, trip) => {
+                  const routeName = trip.patternPath || `Route ${trip.patternCode || 'Unknown'}`;
+                  if (!groups[routeName]) {
+                    groups[routeName] = [];
+                  }
+                  groups[routeName].push(trip);
+                  return groups;
+                }, {})
+              ).map(([routeName, routeTrips]) => (
+                <div key={routeName} className="space-y-2">
+                  {/* Route Header */}
+                  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
+                    <div className="w-2 h-2 rounded-full bg-primary"></div>
+                    <h3 className="font-semibold text-sm text-foreground">{routeName}</h3>
+                    <span className="text-xs text-muted-foreground">({routeTrips.length} trips)</span>
                   </div>
-                );
-              })}
+                  
+                  {/* Route Trips - Compact Grid */}
+                  <div className="grid gap-2">
+                    {routeTrips
+                      .sort((a, b) => {
+                        if (!a.departAtAtOutlet && !b.departAtAtOutlet) return 0;
+                        if (!a.departAtAtOutlet) return 1;
+                        if (!b.departAtAtOutlet) return -1;
+                        return new Date(a.departAtAtOutlet).getTime() - new Date(b.departAtAtOutlet).getTime();
+                      })
+                      .map(trip => {
+                        const disabled = isTripDisabled(trip);
+                        const isSelected = selectedTrip?.tripId === trip.tripId || 
+                                         (trip.isVirtual && selectedTrip?.baseId === trip.baseId);
+                        
+                        return (
+                          <div
+                            key={trip.tripId || trip.baseId}
+                            className={`p-2 border rounded transition-colors ${
+                              disabled 
+                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                                : isSelected
+                                  ? 'border-primary bg-primary/5 cursor-pointer'
+                                  : 'border-border hover:border-primary/50 cursor-pointer'
+                            }`}
+                            onClick={() => !disabled && handleTripSelect(trip)}
+                            data-testid={`trip-${trip.tripId || trip.baseId}`}
+                          >
+                            <div className="flex items-center justify-between gap-2">
+                              {/* Time and Info */}
+                              <div className="flex items-center gap-3 min-w-0 flex-1">
+                                <div className="text-center">
+                                  <div className="font-semibold text-lg leading-none">
+                                    {trip.departAtAtOutlet ? 
+                                      new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { 
+                                        hour: '2-digit', 
+                                        minute: '2-digit', 
+                                        hour12: false, 
+                                        timeZone: 'Asia/Jakarta' 
+                                      }) : '--:--'
+                                    }
+                                  </div>
+                                  <div className="text-xs text-muted-foreground">
+                                    {trip.capacity} seats
+                                  </div>
+                                </div>
+                                
+                                {/* Trip Details */}
+                                <div className="min-w-0 flex-1">
+                                  <div className="flex items-center gap-1 mb-1">
+                                    {getTripBadges(trip)}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground truncate">
+                                    {trip.vehicle ? 
+                                      `${trip.vehicle.code} (${trip.vehicle.plate})` : 
+                                      'Vehicle TBD'
+                                    }
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Select Button */}
+                              <Button 
+                                variant={isSelected ? "default" : "outline"}
+                                size="sm"
+                                className="shrink-0 h-8 px-3"
+                                disabled={disabled || materializeMutation.isPending}
+                                data-testid={`select-trip-${trip.tripId || trip.baseId}`}
+                              >
+                                {materializeMutation.isPending && trip.isVirtual ? (
+                                  <Loader2 className="w-3 h-3 animate-spin" />
+                                ) : disabled ? (
+                                  'N/A'
+                                ) : isSelected ? (
+                                  'Selected'
+                                ) : (
+                                  'Select'
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
