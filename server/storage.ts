@@ -385,7 +385,7 @@ export class DatabaseStorage implements IStorage {
           vehicle: null, // Virtual trips don't have vehicles assigned yet
           capacity: base.capacity,
           status: 'scheduled',
-          departAtAtOutlet,
+          departAtAtOutlet: departAtOutlet,
           finalArrivalAt,
           stopCount: patternStopsForBase.length
         });
@@ -452,7 +452,8 @@ export class DatabaseStorage implements IStorage {
       )`
     });
     
-    return result[0]?.patternStops || 'Unknown Route';
+    const firstRow = result[0];
+    return firstRow?.patternStops || 'Unknown Route';
   }
 
   async getTripById(id: string): Promise<Trip | undefined> {

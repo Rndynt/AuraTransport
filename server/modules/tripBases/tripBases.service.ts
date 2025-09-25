@@ -191,7 +191,7 @@ export class TripBasesService {
           // Find a vehicle that uses this layout
           const vehicles = await this.storage.getVehicles();
           const compatibleVehicle = vehicles.find(v => v.layoutId === pattern.defaultLayoutId);
-          vehicleId = compatibleVehicle?.id;
+          vehicleId = compatibleVehicle?.id || null;
         }
         
         if (!vehicleId) {

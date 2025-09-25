@@ -131,6 +131,7 @@ import { LayoutsController } from "./modules/layouts/layouts.controller";
 import { TripPatternsController } from "./modules/tripPatterns/tripPatterns.controller";
 import { PatternStopsController } from "./modules/patternStops/patternStops.controller";
 import { TripsController } from "./modules/trips/trips.controller";
+import { TripBasesController } from "./modules/tripBases/tripBases.controller";
 import { TripStopTimesController } from "./modules/tripStopTimes/tripStopTimes.controller";
 import { TripLegsController } from "./modules/tripLegs/tripLegs.controller";
 import { PriceRulesController } from "./modules/priceRules/priceRules.controller";
@@ -145,6 +146,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   const layoutsController = new LayoutsController(storage);
   const tripPatternsController = new TripPatternsController(storage);
   const patternStopsController = new PatternStopsController(storage);
+  const tripBasesService = new (await import('./modules/tripBases/tripBases.service')).TripBasesService(storage);
+  const tripBasesController = new TripBasesController(tripBasesService);
   const tripsController = new TripsController(storage);
   const tripStopTimesController = new TripStopTimesController(storage);
   const tripLegsController = new TripLegsController(storage);
@@ -199,6 +202,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put('/api/pattern-stops/:id', asyncHandler(patternStopsController.update.bind(patternStopsController)));
   app.delete('/api/pattern-stops/:id', asyncHandler(patternStopsController.delete.bind(patternStopsController)));
   app.post('/api/trip-patterns/:patternId/stops/bulk-replace', asyncHandler(patternStopsController.bulkReplace.bind(patternStopsController)));
+
+  // Trip Bases routes
+  app.get('/api/trip-bases', asyncHandler(tripBasesController.getAllTripBases.bind(tripBasesController)));
+  app.get('/api/trip-bases/:id', asyncHandler(tripBasesController.getTripBaseById.bind(tripBasesController)));
+  app.post('/api/trip-bases', asyncHandler(tripBasesController.createTripBase.bind(tripBasesController)));
+  app.put('/api/trip-bases/:id', asyncHandler(tripBasesController.updateTripBase.bind(tripBasesController)));
+  app.delete('/api/trip-bases/:id', asyncHandler(tripBasesController.deleteTripBase.bind(tripBasesController)));
+
+  // CSO Virtual Scheduling routes
+  app.post('/api/cso/materialize-trip', asyncHandler(tripBasesController.materializeTrip.bind(tripBasesController)));
+  app.post('/api/trips/:id/close', asyncHandler(tripBasesController.closeTrip.bind(tripBasesController)));
 
   // Trips routes
   app.get('/api/trips', asyncHandler(tripsController.getAll.bind(tripsController)));

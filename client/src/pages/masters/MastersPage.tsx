@@ -7,6 +7,7 @@ import OutletsManager from '@/components/masters/OutletsManager';
 import VehiclesManager from '@/components/masters/VehiclesManager';
 import LayoutsManager from '@/components/masters/LayoutsManager';
 import TripPatternsManager from '@/components/masters/TripPatternsManager';
+import TripBasesManager from '@/components/masters/TripBasesManager';
 import TripsManager from '@/components/masters/TripsManager';
 import PriceRulesManager from '@/components/masters/PriceRulesManager';
 
@@ -27,6 +28,7 @@ export default function MastersPage() {
     { id: 'vehicles', label: 'Vehicles', icon: 'fas fa-shuttle-van', component: VehiclesManager },
     { id: 'layouts', label: 'Layouts', icon: 'fas fa-th-large', component: LayoutsManager },
     { id: 'patterns', label: 'Trip Patterns', icon: 'fas fa-route', component: TripPatternsManager },
+    { id: 'trip-bases', label: 'Trip Bases', icon: 'fas fa-calendar-plus', component: TripBasesManager },
     { id: 'trips', label: 'Trips', icon: 'fas fa-calendar-alt', component: TripsManager },
     { id: 'pricing', label: 'Price Rules', icon: 'fas fa-money-bill-wave', component: PriceRulesManager }
   ];
