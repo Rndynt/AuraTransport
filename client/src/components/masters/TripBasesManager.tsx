@@ -118,8 +118,8 @@ export default function TripBasesManager() {
     sun: true,
     validFrom: '',
     validTo: '',
-    defaultLayoutId: '',
-    defaultVehicleId: '',
+    defaultLayoutId: 'none',
+    defaultVehicleId: 'none',
     capacity: '',
     channelFlags: { CSO: true, WEB: false, APP: false, OTA: false },
     defaultStopTimes: []
@@ -206,8 +206,8 @@ export default function TripBasesManager() {
       sun: true,
       validFrom: '',
       validTo: '',
-      defaultLayoutId: '',
-      defaultVehicleId: '',
+      defaultLayoutId: 'none',
+      defaultVehicleId: 'none',
       capacity: '',
       channelFlags: { CSO: true, WEB: false, APP: false, OTA: false },
       defaultStopTimes: []
@@ -240,8 +240,8 @@ export default function TripBasesManager() {
       sun: base.sun,
       validFrom: base.validFrom || '',
       validTo: base.validTo || '',
-      defaultLayoutId: base.defaultLayoutId || '',
-      defaultVehicleId: base.defaultVehicleId || '',
+      defaultLayoutId: base.defaultLayoutId || 'none',
+      defaultVehicleId: base.defaultVehicleId || 'none',
       capacity: base.capacity?.toString() || '',
       channelFlags: base.channelFlags || { CSO: true, WEB: false, APP: false, OTA: false },
       defaultStopTimes: base.defaultStopTimes || []
@@ -288,8 +288,8 @@ export default function TripBasesManager() {
       capacity: formData.capacity ? parseInt(formData.capacity) : null,
       validFrom: formData.validFrom || null,
       validTo: formData.validTo || null,
-      defaultLayoutId: formData.defaultLayoutId || null,
-      defaultVehicleId: formData.defaultVehicleId || null,
+      defaultLayoutId: formData.defaultLayoutId === 'none' ? null : formData.defaultLayoutId,
+      defaultVehicleId: formData.defaultVehicleId === 'none' ? null : formData.defaultVehicleId,
       defaultStopTimes: stopTimes
     };
 
@@ -376,19 +376,13 @@ export default function TripBasesManager() {
 
       {/* Trip Bases Table */}
       <Card>
-        <CardHeader>
-          <CardTitle>Trip Bases</CardTitle>
-          <CardDescription>
-            Virtual scheduling templates that generate real trips on demand
-          </CardDescription>
-        </CardHeader>
         <CardContent>
           {isLoading ? (
             <div className="flex justify-center p-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
             </div>
           ) : (
-            <div className="rounded-md border">
+            <div className="rounded-md border overflow-x-auto">
               <Table>
                 <TableHeader>
                   <TableRow>
@@ -630,7 +624,7 @@ export default function TripBasesManager() {
                     <SelectValue placeholder="Select layout" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {layouts.map((layout: Layout) => (
                       <SelectItem key={layout.id} value={layout.id}>
                         {layout.name}
@@ -650,7 +644,7 @@ export default function TripBasesManager() {
                     <SelectValue placeholder="Select vehicle" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">None</SelectItem>
+                    <SelectItem value="none">None</SelectItem>
                     {vehicles.map((vehicle: Vehicle) => (
                       <SelectItem key={vehicle.id} value={vehicle.id}>
                         {vehicle.code} - {vehicle.plate}
