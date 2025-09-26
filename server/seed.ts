@@ -8,35 +8,35 @@ export async function seedData() {
     code: "JKT",
     name: "Jakarta Terminal",
     city: "Jakarta",
-    isOutlet: true
+    isOutlet: true,
   });
 
   const purwakartaStop = await storage.createStop({
-    code: "PWK", 
+    code: "PWK",
     name: "Purwakarta",
     city: "Purwakarta",
-    isOutlet: true  // Make it an outlet for pickup-only testing
+    isOutlet: true, // Make it an outlet for pickup-only testing
   });
 
   const bandungStop = await storage.createStop({
     code: "BDG",
-    name: "Bandung Terminal", 
+    name: "Bandung Terminal",
     city: "Bandung",
-    isOutlet: true
+    isOutlet: true,
   });
 
   const bandungStop1 = await storage.createStop({
     code: "BDP",
-    name: "Bandung Pasteur", 
+    name: "Bandung Pasteur",
     city: "Bandung",
-    isOutlet: true
+    isOutlet: true,
   });
 
   const semarangStop = await storage.createStop({
     code: "SMR",
-    name: "Semarang", 
+    name: "Semarang",
     city: "Semarang",
-    isOutlet: true
+    isOutlet: true,
   });
 
   console.log("✅ Stops created");
@@ -46,35 +46,35 @@ export async function seedData() {
     stopId: jakartaStop.id,
     name: "Jakarta Terminal Outlet",
     address: "Jl. Terminal Jakarta",
-    phone: "+62-21-1234567"
+    phone: "+62-21-1234567",
   });
 
   await storage.createOutlet({
     stopId: bandungStop.id,
     name: "Bandung Terminal Outlet",
-    address: "Jl. Terminal Bandung", 
-    phone: "+62-22-1234567"
+    address: "Jl. Terminal Bandung",
+    phone: "+62-22-1234567",
   });
 
   await storage.createOutlet({
     stopId: bandungStop1.id,
     name: "Bandung Pasteur Outlet",
-    address: "Jl. Pasteur Bandung", 
-    phone: "+62-22-7654321"
+    address: "Jl. Pasteur Bandung",
+    phone: "+62-22-7654321",
   });
 
   await storage.createOutlet({
     stopId: purwakartaStop.id,
     name: "Purwakarta Outlet",
-    address: "Jl. Veteran Purwakarta", 
-    phone: "+62-264-1234567"
+    address: "Jl. Veteran Purwakarta",
+    phone: "+62-264-1234567",
   });
 
   await storage.createOutlet({
     stopId: semarangStop.id,
     name: "Semarang Outlet",
-    address: "Jl. Kh Dewantara Semarang", 
-    phone: "+62-24-1234567"
+    address: "Jl. Kh Dewantara Semarang",
+    phone: "+62-24-1234567",
   });
 
   console.log("✅ Outlets created");
@@ -96,8 +96,8 @@ export async function seedData() {
       { seat_no: "3A", row: 3, col: 1, class: "standard" },
       { seat_no: "3B", row: 3, col: 2, class: "standard" },
       { seat_no: "3C", row: 3, col: 3, class: "standard" },
-      { seat_no: "3D", row: 3, col: 4, class: "standard" }
-    ]
+      { seat_no: "3D", row: 3, col: 4, class: "standard" },
+    ],
   });
 
   const layout8 = await storage.createLayout({
@@ -112,8 +112,8 @@ export async function seedData() {
       { seat_no: "2A", row: 2, col: 1, class: "standard" },
       { seat_no: "2B", row: 2, col: 2, class: "standard" },
       { seat_no: "2C", row: 2, col: 3, class: "standard" },
-      { seat_no: "2D", row: 2, col: 4, class: "standard" }
-    ]
+      { seat_no: "2D", row: 2, col: 4, class: "standard" },
+    ],
   });
 
   console.log("✅ Layouts created");
@@ -124,71 +124,107 @@ export async function seedData() {
     plate: "B 1234 ABC",
     layoutId: layout12.id,
     capacity: 12,
-    notes: "12-seat vehicle for Slot-1"
+    notes: "12-seat vehicle for Slot-1",
   });
 
   const vehicleB = await storage.createVehicle({
-    code: "BUS-B", 
+    code: "BUS-B",
     plate: "B 5678 DEF",
     layoutId: layout8.id,
     capacity: 8,
-    notes: "8-seat vehicle for Slot-2"
+    notes: "8-seat vehicle for Slot-2",
   });
-  
+
   console.log("✅ Vehicles created");
 
   // Create trip pattern
-  const pattern = await storage.createTripPattern({
+  const patternA = await storage.createTripPattern({
     code: "AB_via_C",
     name: "Jakarta to Bandung via Purwakarta",
     vehicleClass: "standard",
     defaultLayoutId: layout12.id,
     active: true,
-    tags: ["intercity", "demo"]
+    tags: ["intercity", "demo"],
+  });
+
+  const patternB = await storage.createTripPattern({
+    code: "JKT-SMR",
+    name: "Jakarta to Semarang via Bandung",
+    vehicleClass: "standard",
+    defaultLayoutId: layout8.id,
+    active: true,
+    tags: ["intercity", "demo"],
   });
 
   console.log("✅ Trip pattern created");
 
   // Create pattern stops with pickup-only setup
   await storage.createPatternStop({
-    patternId: pattern.id,
+    patternId: patternA.id,
     stopId: jakartaStop.id,
     stopSequence: 1,
     dwellSeconds: 0,
     boardingAllowed: true,
-    alightingAllowed: true
+    alightingAllowed: true,
   });
 
   await storage.createPatternStop({
-    patternId: pattern.id,
+    patternId: patternA.id,
     stopId: purwakartaStop.id,
     stopSequence: 2,
     dwellSeconds: 300, // 5 minutes
     boardingAllowed: true,
-    alightingAllowed: false // PICKUP-ONLY stop
+    alightingAllowed: false, // PICKUP-ONLY stop
   });
 
   await storage.createPatternStop({
-    patternId: pattern.id,
+    patternId: patternA.id,
     stopId: bandungStop.id,
     stopSequence: 3,
     dwellSeconds: 0,
     boardingAllowed: true,
-    alightingAllowed: true
+    alightingAllowed: true,
+  });
+
+  await storage.createPatternStop({
+    patternId: patternB.id,
+    stopId: jakartaStop.id,
+    stopSequence: 1,
+    dwellSeconds: 0,
+    boardingAllowed: true,
+    alightingAllowed: true,
+  });
+
+  await storage.createPatternStop({
+    patternId: patternB.id,
+    stopId: bandungStop.id,
+    stopSequence: 2,
+    dwellSeconds: 600, // 5 minutes
+    boardingAllowed: true,
+    alightingAllowed: false, // PICKUP-ONLY stop
+  });
+
+  await storage.createPatternStop({
+    patternId: patternB.id,
+    stopId: semarangStop.id,
+    stopSequence: 3,
+    dwellSeconds: 0,
+    boardingAllowed: true,
+    alightingAllowed: true,
   });
 
   console.log("✅ Pattern stops created");
 
   // Create trip for today (using vehicleA for demo)
-  const today = new Date().toISOString().split('T')[0];
+  const today = new Date().toISOString().split("T")[0];
   const trip = await storage.createTrip({
-    patternId: pattern.id,
+    patternId: patternA.id,
     serviceDate: today,
     vehicleId: vehicleA.id,
     layoutId: layout12.id,
     capacity: 12,
-    status: 'scheduled',
-    channelFlags: { CSO: true, WEB: false, APP: false, OTA: false }
+    status: "scheduled",
+    channelFlags: { CSO: true, WEB: false, APP: false, OTA: false },
   });
 
   console.log("✅ Trip created");
@@ -203,7 +239,7 @@ export async function seedData() {
     stopSequence: 1,
     arriveAt: null,
     departAt: baseTime,
-    dwellSeconds: 0
+    dwellSeconds: 0,
   });
 
   const purwakartaArrive = new Date(baseTime.getTime() + 55 * 60 * 1000); // 12:55 PM
@@ -215,7 +251,7 @@ export async function seedData() {
     stopSequence: 2,
     arriveAt: purwakartaArrive,
     departAt: purwakartaDepart,
-    dwellSeconds: 300
+    dwellSeconds: 300,
   });
 
   const bandungArrive = new Date(baseTime.getTime() + 120 * 60 * 1000); // 14:00 PM
@@ -226,20 +262,24 @@ export async function seedData() {
     stopSequence: 3,
     arriveAt: bandungArrive,
     departAt: null,
-    dwellSeconds: 0
+    dwellSeconds: 0,
   });
 
   console.log("✅ Trip stop times created");
 
   // Derive legs
-  const { TripLegsService } = await import("./modules/tripLegs/tripLegs.service");
+  const { TripLegsService } = await import(
+    "./modules/tripLegs/tripLegs.service"
+  );
   const tripLegsService = new TripLegsService(storage);
   await tripLegsService.deriveLegsFromTrip(trip);
 
   console.log("✅ Trip legs derived");
 
   // Precompute seat inventory
-  const { SeatInventoryService } = await import("./modules/seatInventory/seatInventory.service");
+  const { SeatInventoryService } = await import(
+    "./modules/seatInventory/seatInventory.service"
+  );
   const seatInventoryService = new SeatInventoryService(storage);
   await seatInventoryService.precomputeInventory(trip);
 
@@ -247,25 +287,25 @@ export async function seedData() {
 
   // Create basic price rule
   await storage.createPriceRule({
-    scope: 'pattern',
-    patternId: pattern.id,
+    scope: "pattern",
+    patternId: patternA.id,
     tripId: null,
     legIndex: null,
-    rule: { 
+    rule: {
       basePricePerLeg: 25000,
       currency: "IDR",
-      multiplier: 1.0
+      multiplier: 1.0,
     },
     validFrom: null,
     validTo: null,
-    priority: 1
+    priority: 1,
   });
 
   console.log("✅ Price rule created");
 
   // Create Trip Bases for Virtual Scheduling
   const tripBase1 = await storage.createTripBase({
-    patternId: pattern.id,
+    patternId: patternA.id,
     code: "10:00-SLOT-1",
     name: "Jakarta-Bandung 10:00 Slot-1 (12-seat)",
     active: true,
@@ -286,12 +326,12 @@ export async function seedData() {
     defaultStopTimes: [
       { stopSequence: 1, arriveAt: null, departAt: "10:00" },
       { stopSequence: 2, arriveAt: "10:55", departAt: "11:00" },
-      { stopSequence: 3, arriveAt: "12:00", departAt: null }
-    ]
+      { stopSequence: 3, arriveAt: "12:00", departAt: null },
+    ],
   });
 
   const tripBase2 = await storage.createTripBase({
-    patternId: pattern.id,
+    patternId: patternA.id,
     code: "10:00-SLOT-2",
     name: "Jakarta-Bandung 10:00 Slot-2 (8-seat)",
     active: true,
@@ -312,12 +352,12 @@ export async function seedData() {
     defaultStopTimes: [
       { stopSequence: 1, arriveAt: null, departAt: "10:00" },
       { stopSequence: 2, arriveAt: "10:55", departAt: "11:00" },
-      { stopSequence: 3, arriveAt: "12:00", departAt: null }
-    ]
+      { stopSequence: 3, arriveAt: "12:00", departAt: null },
+    ],
   });
 
   const tripBase3 = await storage.createTripBase({
-    patternId: pattern.id,
+    patternId: patternA.id,
     code: "13:00-SLOT-1",
     name: "Jakarta-Bandung 13:00 Slot-1 (12-seat)",
     active: true,
@@ -338,8 +378,8 @@ export async function seedData() {
     defaultStopTimes: [
       { stopSequence: 1, arriveAt: null, departAt: "13:00" },
       { stopSequence: 2, arriveAt: "13:55", departAt: "14:00" },
-      { stopSequence: 3, arriveAt: "15:00", departAt: null }
-    ]
+      { stopSequence: 3, arriveAt: "15:00", departAt: null },
+    ],
   });
 
   console.log("✅ Trip Bases created");
