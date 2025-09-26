@@ -90,7 +90,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false, isCo
       <div className="px-4 py-3 lg:px-6 lg:py-2 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-lg lg:text-xl font-bold text-primary flex items-center">
+            <h1 className="text-base lg:text-lg font-bold text-primary flex items-center">
               {/* Replaced Bus icon with TransityMark */}
               <TransityMark
                 className="w-6 h-6 mr-2 shrink-0"
@@ -104,11 +104,9 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false, isCo
                 </>
               )}
             </h1>
-            {(!isCollapsed || isMobile) && (
-              <p className="text-xs lg:text-sm text-muted-foreground mt-1 hidden lg:block">
-                Multi-Stop Travel System
-              </p>
-            )}
+            <p className="text-xs lg:text-sm text-muted-foreground hidden lg:block min-h-[1.25rem]">
+              {(!isCollapsed || isMobile) ? "Multi-Stop Travel System" : "\u00A0"}
+            </p>
           </div>
           {isMobile && (
             <Button

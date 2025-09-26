@@ -72,7 +72,8 @@ export default function BookingStepper({ steps }: BookingStepperProps) {
 
       {/* Desktop: Horizontal stepper */}
       <div className="hidden lg:block">
-        <div className="flex items-center justify-between">
+        <div className="overflow-x-auto">
+          <div className="flex items-center justify-between min-w-full">
           {steps.map((step, index) => (
             <div key={step.id} className="flex items-center">
               <div 
@@ -102,6 +103,7 @@ export default function BookingStepper({ steps }: BookingStepperProps) {
               )}
             </div>
           ))}
+          </div>
         </div>
       </div>
     </div>
