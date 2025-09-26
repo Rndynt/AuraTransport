@@ -534,16 +534,6 @@ export default function CsoPage() {
     <div className="w-full max-w-none" data-testid="cso-page">
       {/* Header Section with Stepper */}
       <div className="bg-card border-b border-border px-6 py-4 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-xl font-semibold text-foreground">CSO Booking Terminal</h1>
-            <p className="text-sm text-muted-foreground">Issue tickets for multi-stop routes</p>
-          </div>
-          <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-            <span>CSO User</span>
-            <span>{new Date().toLocaleDateString('id-ID', { timeZone: 'Asia/Jakarta' })}</span>
-          </div>
-        </div>
         
         {/* New Horizontal Stepper */}
         <div className="flex items-center justify-center space-x-8">

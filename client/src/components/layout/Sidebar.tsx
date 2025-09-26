@@ -1,6 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { MapPin, Store, Truck, LayoutGrid, Route, Calendar, DollarSign, Ticket, List, X } from "lucide-react";
 
 // ======= Transity Mark (Tri-Hub Y-Node) =======
@@ -55,9 +56,11 @@ interface SidebarProps {
   isOpen?: boolean;
   onClose?: () => void;
   isMobile?: boolean;
+  isCollapsed?: boolean;
+  onToggleCollapse?: () => void;
 }
 
-export default function Sidebar({ isOpen = true, onClose, isMobile = false }: SidebarProps) {
+export default function Sidebar({ isOpen = true, onClose, isMobile = false, isCollapsed = false }: SidebarProps) {
   const [location] = useLocation();
 
   const handleLinkClick = () => {
@@ -73,11 +76,14 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
       aria-modal={isMobile ? "true" : undefined}
       aria-label="Main navigation"
       className={cn(
-        "bg-card border-r border-border flex flex-col transition-transform duration-300 ease-in-out",
+        "bg-card border-r border-border flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
         isMobile ? [
           "fixed left-0 top-0 bottom-0 z-50 w-64 transform",
           isOpen ? "translate-x-0" : "-translate-x-full"
-        ] : "w-64 relative"
+        ] : [
+          "relative",
+          isCollapsed ? "w-16" : "w-64"
+        ]
       )}
     >
       {/* Header with close button for mobile */}
@@ -87,16 +93,22 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
             <h1 className="text-lg lg:text-xl font-bold text-primary flex items-center">
               {/* Replaced Bus icon with TransityMark */}
               <TransityMark
-                className="w-8 h-8 mr-2 shrink-0"
+                className="w-6 h-6 mr-2 shrink-0"
                 data-testid="logo-transity"
               />
-              {/* Logo text */}
-              <span className="hidden sm:inline">Transity</span>
-              <span className="sm:hidden">Transity</span>
+              {/* Logo text - hidden when collapsed on desktop only */}
+              {(!isCollapsed || isMobile) && (
+                <>
+                  <span className="hidden sm:inline">Transity</span>
+                  <span className="sm:hidden">Transity</span>
+                </>
+              )}
             </h1>
-            <p className="text-xs lg:text-sm text-muted-foreground mt-1 hidden lg:block">
-              Multi-Stop Travel System
-            </p>
+            {(!isCollapsed || isMobile) && (
+              <p className="text-xs lg:text-sm text-muted-foreground mt-1 hidden lg:block">
+                Multi-Stop Travel System
+              </p>
+            )}
           </div>
           {isMobile && (
             <Button
@@ -114,42 +126,84 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false }: Si
       </div>
 
       <nav className="flex-1 p-3 lg:p-4 overflow-y-auto">
+        <TooltipProvider delayDuration={100}>
         <div className="space-y-4 lg:space-y-6">
           {navigationItems.map((section) => (
             <div key={section.title}>
-              <h3 className="text-xs lg:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 lg:mb-3">
-                {section.title}
-              </h3>
-              <ul className="space-y-1 lg:space-y-2">
-                {section.items.map((item) => (
-                  <li key={item.name}>
+              {/* Section title - hidden when collapsed on desktop only */}
+              {(!isCollapsed || isMobile) && (
+                <h3 className="text-xs lg:text-sm font-semibold text-muted-foreground uppercase tracking-wider mb-2 lg:mb-3">
+                  {section.title}
+                </h3>
+              )}
+              <ul className={cn(
+                "space-y-1 lg:space-y-2",
+                isCollapsed && !isMobile && "mb-4" // Add spacing between sections when collapsed on desktop only
+              )}>
+                {section.items.map((item) => {
+                  const navItem = (
                     <Link href={item.path}>
                       <div
                         className={cn(
-                          "flex items-center px-2 lg:px-3 py-2 lg:py-2 text-sm rounded-md transition-colors w-full cursor-pointer",
+                          "flex items-center py-2 lg:py-2 text-sm rounded-md transition-colors w-full cursor-pointer",
+                          (isCollapsed && !isMobile) ? "px-2 justify-center" : "px-2 lg:px-3",
                           location === item.path
                             ? "bg-primary text-primary-foreground"
                             : "text-foreground hover:bg-muted"
                         )}
-                        data-testid={`nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
+                        data-testid={(isCollapsed && !isMobile) ? `icon-nav-${item.name.toLowerCase().replace(/\s+/g, '-')}` : `nav-${item.name.toLowerCase().replace(/\s+/g, '-')}`}
                         onClick={handleLinkClick}
                       >
-                        <item.icon className="w-4 lg:w-5 h-4 lg:h-5 mr-2 lg:mr-3" />
-                        <span className="truncate">{item.name}</span>
+                        <item.icon className={cn(
+                          "w-4 lg:w-5 h-4 lg:h-5",
+                          (!isCollapsed || isMobile) && "mr-2 lg:mr-3"
+                        )} />
+                        {(!isCollapsed || isMobile) && <span className="truncate">{item.name}</span>}
                       </div>
                     </Link>
-                  </li>
-                ))}
+                  );
+
+                  // Wrap with tooltip when collapsed on desktop only
+                  if (isCollapsed && !isMobile) {
+                    return (
+                      <li key={item.name}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            {navItem}
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="font-medium">
+                            {item.name}
+                          </TooltipContent>
+                        </Tooltip>
+                      </li>
+                    );
+                  }
+
+                  return (
+                    <li key={item.name}>
+                      {navItem}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           ))}
         </div>
+        </TooltipProvider>
       </nav>
 
       <div className="p-3 lg:p-4 border-t border-border">
         <div className="text-xs text-muted-foreground">
-          <p className="truncate">Demo Transport</p>
-          <p className="hidden lg:block">Version: 1.0.0-MVP</p>
+          {(!isCollapsed || isMobile) ? (
+            <>
+              <p className="truncate">Demo Transport</p>
+              <p className="hidden lg:block">Version: 1.0.0-MVP</p>
+            </>
+          ) : (
+            <div className="flex justify-center">
+              <div className="w-2 h-2 bg-green-500 rounded-full" title="Online" />
+            </div>
+          )}
         </div>
       </div>
     </div>

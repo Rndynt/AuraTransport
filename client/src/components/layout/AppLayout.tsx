@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from "react";
 import Sidebar from "./Sidebar";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { Menu } from "lucide-react";
+import { Menu, PanelLeftClose, PanelLeftOpen } from "lucide-react";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -10,7 +10,20 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(() => {
+    // Load collapsed state from localStorage, default to false
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('sidebar-collapsed');
+      return saved ? JSON.parse(saved) : false;
+    }
+    return false;
+  });
   const isMobile = useIsMobile();
+
+  // Save collapsed state to localStorage
+  useEffect(() => {
+    localStorage.setItem('sidebar-collapsed', JSON.stringify(isCollapsed));
+  }, [isCollapsed]);
 
   // Handle escape key and body scroll lock
   useEffect(() => {
@@ -50,12 +63,31 @@ export default function AppLayout({ children }: AppLayoutProps) {
         isOpen={sidebarOpen} 
         onClose={() => setSidebarOpen(false)}
         isMobile={isMobile}
+        isCollapsed={isCollapsed}
+        onToggleCollapse={() => setIsCollapsed(!isCollapsed)}
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
         <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
+              {/* Desktop collapse toggle button */}
+              {!isMobile && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setIsCollapsed(!isCollapsed)}
+                  className="p-2 h-10 w-10 text-foreground hover:bg-muted border border-border focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+                  data-testid="toggle-sidebar-collapse"
+                >
+                  {isCollapsed ? (
+                    <PanelLeftOpen className="w-5 h-5" />
+                  ) : (
+                    <PanelLeftClose className="w-5 h-5" />
+                  )}
+                </Button>
+              )}
               {/* Mobile menu button */}
               {isMobile && (
                 <Button
