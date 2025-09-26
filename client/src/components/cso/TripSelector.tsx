@@ -171,16 +171,15 @@ export default function TripSelector({
   };
 
   return (
-    <div className="space-y-4">
-      {/* Outlet Selection */}
-      <Card data-testid="outlet-selector">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-base">
-            <Store className="w-4 h-4 mr-2 text-primary" />
-            Select Outlet
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+    <div className="space-y-6">
+      {/* Outlet & Date Selection - Compact Layout */}
+      <div className="space-y-4">
+        {/* Select Outlet */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Store className="w-4 h-4 text-muted-foreground" />
+            <Label className="text-sm font-medium">Select Outlet</Label>
+          </div>
           <Select 
             value={selectedOutlet?.id} 
             onValueChange={(value) => {
@@ -189,8 +188,8 @@ export default function TripSelector({
             }}
             data-testid="outlet-select"
           >
-            <SelectTrigger>
-              <SelectValue placeholder="Choose outlet..." />
+            <SelectTrigger className="h-10">
+              <SelectValue placeholder="Jakarta Terminal Outlet →" />
             </SelectTrigger>
             <SelectContent>
               {outlets.map(outlet => (
@@ -200,58 +199,50 @@ export default function TripSelector({
               ))}
             </SelectContent>
           </Select>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Date Selection */}
-      <Card data-testid="date-selector">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-base">
-            <Calendar className="w-4 h-4 mr-2 text-primary" />
-            Select Date
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-2">
-            <Label htmlFor="trip-date">Service Date</Label>
-            <Input
-              id="trip-date"
-              type="date"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              data-testid="trip-date-input"
-            />
+        {/* Select Date */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <Calendar className="w-4 h-4 text-muted-foreground" />
+            <Label className="text-sm font-medium">Select Date</Label>
           </div>
-        </CardContent>
-      </Card>
+          <Input
+            type="date"
+            value={selectedDate}
+            onChange={(e) => setSelectedDate(e.target.value)}
+            className="h-10"
+            data-testid="trip-date-input"
+          />
+        </div>
+      </div>
 
-      {/* Trip Selection */}
-      <Card data-testid="trip-selector">
-        <CardHeader className="pb-3">
-          <CardTitle className="flex items-center text-base">
-            <Bus className="w-4 h-4 mr-2 text-primary" />
-            Available Trips
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
+      {/* Available Trips */}
+      <div>
+        <div className="flex items-center gap-2 mb-4">
+          <Bus className="w-4 h-4 text-muted-foreground" />
+          <h3 className="text-sm font-medium">Available Trips</h3>
+        </div>
+        
+        <div className="border rounded-lg">
           {!selectedOutlet ? (
-            <div className="text-center py-6">
-              <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">Select an outlet to see available trips for this date</p>
+            <div className="text-center py-8 p-4">
+              <Store className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground text-sm">Select an outlet to see available trips for this date</p>
             </div>
           ) : tripsLoading ? (
-            <div className="text-center py-4">
-              <Loader2 className="w-6 h-6 animate-spin mx-auto text-primary" />
-              <p className="text-sm text-muted-foreground mt-2">Loading trips...</p>
+            <div className="text-center py-8 p-4">
+              <Loader2 className="w-8 h-8 animate-spin mx-auto text-primary mb-3" />
+              <p className="text-sm text-muted-foreground">Loading trips...</p>
             </div>
           ) : trips.length === 0 ? (
-            <div className="text-center py-6">
-              <Info className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-              <p className="text-muted-foreground">No trips available for this outlet on {selectedDate}</p>
-              <p className="text-sm text-muted-foreground mt-1">Try another date or outlet</p>
+            <div className="text-center py-8 p-4">
+              <Bus className="w-12 h-12 text-muted-foreground mx-auto mb-3 opacity-50" />
+              <p className="text-muted-foreground text-sm">No trips available for this outlet on {selectedDate}</p>
+              <p className="text-xs text-muted-foreground mt-1">Try another date or outlet</p>
             </div>
           ) : (
-            <div className="space-y-4">
+            <div className="p-4">
               {/* Group trips by route */}
               {Object.entries(
                 trips.reduce((groups: Record<string, CsoAvailableTrip[]>, trip) => {
@@ -263,16 +254,16 @@ export default function TripSelector({
                   return groups;
                 }, {})
               ).map(([routeName, routeTrips]) => (
-                <div key={routeName} className="space-y-2">
+                <div key={routeName} className="mb-6 last:mb-0">
                   {/* Route Header */}
-                  <div className="flex items-center gap-2 pb-2 border-b border-border/50">
-                    <div className="w-2 h-2 rounded-full bg-primary"></div>
-                    <h3 className="font-semibold text-sm text-foreground">{routeName}</h3>
-                    <span className="text-xs text-muted-foreground">({routeTrips.length} trips)</span>
+                  <div className="flex items-center gap-2 pb-3 mb-3 border-b border-border/30">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500"></div>
+                    <h3 className="font-medium text-sm text-foreground">{routeName}</h3>
+                    <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">({routeTrips.length} trips)</span>
                   </div>
                   
-                  {/* Route Trips - Compact Grid */}
-                  <div className="grid gap-2">
+                  {/* Route Trips - Clean List */}
+                  <div className="space-y-2">
                     {routeTrips
                       .sort((a, b) => {
                         if (!a.departAtAtOutlet && !b.departAtAtOutlet) return 0;
@@ -295,46 +286,44 @@ export default function TripSelector({
                         return (
                           <div
                             key={trip.tripId || `${trip.baseId}-${trip.departAtAtOutlet}`}
-                            className={`p-2 border rounded transition-colors ${
+                            className={`p-3 border rounded-lg transition-all duration-200 ${
                               disabled 
-                                ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
+                                ? 'border-gray-200 bg-gray-50/50 cursor-not-allowed opacity-60'
                                 : isSelected
-                                  ? 'border-primary bg-primary/5 cursor-pointer'
-                                  : 'border-border hover:border-primary/50 cursor-pointer'
+                                  ? 'border-blue-500 bg-blue-50/50 shadow-sm cursor-pointer'
+                                  : 'border-border hover:border-blue-300 hover:shadow-sm cursor-pointer'
                             }`}
                             onClick={() => !disabled && handleTripSelect(trip)}
                             data-testid={`trip-${trip.tripId || `${trip.baseId}-${new Date(trip.departAtAtOutlet || '').getTime()}`}`}
                           >
-                            <div className="flex items-center justify-between gap-2">
-                              {/* Time and Info */}
-                              <div className="flex items-center gap-3 min-w-0 flex-1">
-                                <div className="text-center">
-                                  <div className="font-semibold text-lg leading-none">
-                                    {trip.departAtAtOutlet ? 
-                                      new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { 
-                                        hour: '2-digit', 
-                                        minute: '2-digit', 
-                                        hour12: false, 
-                                        timeZone: 'Asia/Jakarta' 
-                                      }) : '--:--'
-                                    }
-                                  </div>
-                                  <div className="text-xs text-muted-foreground">
-                                    {trip.capacity} seats
-                                  </div>
+                            <div className="flex items-center justify-between gap-3">
+                              {/* Time */}
+                              <div className="text-center min-w-0">
+                                <div className="font-bold text-lg leading-none text-foreground">
+                                  {trip.departAtAtOutlet ? 
+                                    new Date(trip.departAtAtOutlet).toLocaleTimeString('id-ID', { 
+                                      hour: '2-digit', 
+                                      minute: '2-digit', 
+                                      hour12: false, 
+                                      timeZone: 'Asia/Jakarta' 
+                                    }) : '--:--'
+                                  }
                                 </div>
-                                
-                                {/* Trip Details */}
-                                <div className="min-w-0 flex-1">
-                                  <div className="flex items-center gap-1 mb-1">
-                                    {getTripBadges(trip)}
-                                  </div>
-                                  <div className="text-xs text-muted-foreground truncate">
-                                    {trip.vehicle ? 
-                                      `${trip.vehicle.code} (${trip.vehicle.plate})` : 
-                                      'Vehicle TBD'
-                                    }
-                                  </div>
+                                <div className="text-xs text-muted-foreground mt-1">
+                                  {trip.capacity} seats
+                                </div>
+                              </div>
+                              
+                              {/* Trip Details */}
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-1.5 mb-1.5">
+                                  {getTripBadges(trip)}
+                                </div>
+                                <div className="text-xs text-muted-foreground">
+                                  {trip.vehicle ? 
+                                    `${trip.vehicle.code} (${trip.vehicle.plate})` : 
+                                    'Vehicle TBD'
+                                  }
                                 </div>
                               </div>
                               
@@ -342,7 +331,9 @@ export default function TripSelector({
                               <Button 
                                 variant={isSelected ? "default" : "outline"}
                                 size="sm"
-                                className="shrink-0 h-8 px-3"
+                                className={`shrink-0 h-8 px-4 font-medium ${
+                                  isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
+                                }`}
                                 disabled={disabled || materializeMutation.isPending}
                                 data-testid={`select-trip-${trip.tripId || `${trip.baseId}-${new Date(trip.departAtAtOutlet || '').getTime()}`}`}
                               >
@@ -365,8 +356,8 @@ export default function TripSelector({
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
     </div>
   );
 }
