@@ -282,12 +282,19 @@ export default function TripSelector({
                       })
                       .map(trip => {
                         const disabled = isTripDisabled(trip);
-                        const isSelected = selectedTrip?.tripId === trip.tripId || 
-                                         (trip.isVirtual && selectedTrip?.baseId === trip.baseId);
+                        // Fix selection logic: For virtual trips, use baseId + departure time for unique identification
+                        // For real trips, use tripId. This prevents all virtual trips from showing as "Selected"
+                        const isSelected = selectedTrip ? 
+                          (trip.isVirtual 
+                            ? (selectedTrip.isVirtual && 
+                               selectedTrip.baseId === trip.baseId && 
+                               selectedTrip.departAtAtOutlet === trip.departAtAtOutlet)
+                            : selectedTrip.tripId === trip.tripId
+                          ) : false;
                         
                         return (
                           <div
-                            key={trip.tripId || trip.baseId}
+                            key={trip.tripId || `${trip.baseId}-${trip.departAtAtOutlet}`}
                             className={`p-2 border rounded transition-colors ${
                               disabled 
                                 ? 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
@@ -296,7 +303,7 @@ export default function TripSelector({
                                   : 'border-border hover:border-primary/50 cursor-pointer'
                             }`}
                             onClick={() => !disabled && handleTripSelect(trip)}
-                            data-testid={`trip-${trip.tripId || trip.baseId}`}
+                            data-testid={`trip-${trip.tripId || `${trip.baseId}-${new Date(trip.departAtAtOutlet || '').getTime()}`}`}
                           >
                             <div className="flex items-center justify-between gap-2">
                               {/* Time and Info */}
@@ -337,7 +344,7 @@ export default function TripSelector({
                                 size="sm"
                                 className="shrink-0 h-8 px-3"
                                 disabled={disabled || materializeMutation.isPending}
-                                data-testid={`select-trip-${trip.tripId || trip.baseId}`}
+                                data-testid={`select-trip-${trip.tripId || `${trip.baseId}-${new Date(trip.departAtAtOutlet || '').getTime()}`}`}
                               >
                                 {materializeMutation.isPending && trip.isVirtual ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
