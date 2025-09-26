@@ -77,14 +77,14 @@ export default function AppLayout({ children }: AppLayoutProps) {
                   variant="ghost"
                   size="sm"
                   onClick={() => setIsCollapsed(!isCollapsed)}
-                  className="p-2 h-10 w-10 text-foreground hover:bg-muted border border-border focus:ring-2 focus:ring-offset-2 focus:ring-primary"
+                  className="p-2 h-8 w-8 text-foreground hover:bg-muted border border-border focus:ring-2 focus:ring-offset-2 focus:ring-primary"
                   aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
                   data-testid="toggle-sidebar-collapse"
                 >
                   {isCollapsed ? (
-                    <PanelLeftOpen className="w-5 h-5" />
+                    <PanelLeftOpen className="w-4 h-4" />
                   ) : (
-                    <PanelLeftClose className="w-5 h-5" />
+                    <PanelLeftClose className="w-4 h-4" />
                   )}
                 </Button>
               )}

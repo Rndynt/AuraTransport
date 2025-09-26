@@ -93,7 +93,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false, isCo
             <h1 className="text-base lg:text-lg font-bold text-primary flex items-center">
               {/* Replaced Bus icon with TransityMark */}
               <TransityMark
-                className="w-6 h-6 mr-2 shrink-0"
+                className="w-7 h-7 mr-2 shrink-0"
                 data-testid="logo-transity"
               />
               {/* Logo text - hidden when collapsed on desktop only */}
