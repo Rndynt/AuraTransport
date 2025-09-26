@@ -87,7 +87,7 @@ export default function Sidebar({ isOpen = true, onClose, isMobile = false, isCo
       )}
     >
       {/* Header with close button for mobile */}
-      <div className="p-4 lg:px-6 lg:py-2 border-b border-border">
+      <div className="px-4 py-3 lg:px-6 lg:py-2 border-b border-border">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-lg lg:text-xl font-bold text-primary flex items-center">
