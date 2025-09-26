@@ -535,51 +535,53 @@ export default function CsoPage() {
       {/* Header Section with Stepper */}
       <div className="bg-card border-b border-border px-6 py-4 mb-6">
         
-        {/* New Horizontal Stepper */}
-        <div className="flex items-center justify-center space-x-8">
-          {[
-            { id: 1, name: 'Outlet', icon: '1' },
-            { id: 2, name: 'Trip', icon: '2' },
-            { id: 3, name: 'Route', icon: '3' },
-            { id: 4, name: 'Seats', icon: '4' },
-            { id: 5, name: 'Passengers', icon: '5' },
-            { id: 6, name: 'Payment', icon: '6' }
-          ].map((step, index) => {
-            const isActive = state.currentStep === step.id;
-            const isCompleted = state.currentStep > step.id;
-            const isClickable = state.currentStep >= step.id;
-            
-            return (
-              <div key={step.id} className="flex items-center">
-                <div 
-                  className={`flex flex-col items-center cursor-pointer ${
-                    isClickable ? 'hover:opacity-80' : 'opacity-50'
-                  }`}
-                  onClick={() => isClickable && handleStepClick(step.id)}
-                >
-                  <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
-                    isActive 
-                      ? 'bg-primary text-primary-foreground' 
-                      : isCompleted 
-                        ? 'bg-green-500 text-white'
-                        : 'bg-muted text-muted-foreground border border-border'
-                  }`}>
-                    {isCompleted ? '✓' : step.icon}
+        {/* Responsive Horizontal Stepper */}
+        <div className="overflow-x-auto">
+          <div className="flex items-center justify-center space-x-2 md:space-x-4 lg:space-x-8 min-w-max px-4">
+            {[
+              { id: 1, name: 'Outlet', icon: '1' },
+              { id: 2, name: 'Trip', icon: '2' },
+              { id: 3, name: 'Route', icon: '3' },
+              { id: 4, name: 'Seats', icon: '4' },
+              { id: 5, name: 'Passengers', icon: '5' },
+              { id: 6, name: 'Payment', icon: '6' }
+            ].map((step, index) => {
+              const isActive = state.currentStep === step.id;
+              const isCompleted = state.currentStep > step.id;
+              const isClickable = state.currentStep >= step.id;
+              
+              return (
+                <div key={step.id} className="flex items-center">
+                  <div 
+                    className={`flex flex-col items-center cursor-pointer ${
+                      isClickable ? 'hover:opacity-80' : 'opacity-50'
+                    }`}
+                    onClick={() => isClickable && handleStepClick(step.id)}
+                  >
+                    <div className={`w-6 h-6 md:w-8 md:h-8 rounded-full flex items-center justify-center text-xs md:text-sm font-medium ${
+                      isActive 
+                        ? 'bg-primary text-primary-foreground' 
+                        : isCompleted 
+                          ? 'bg-green-500 text-white'
+                          : 'bg-muted text-muted-foreground border border-border'
+                    }`}>
+                      {isCompleted ? '✓' : step.icon}
+                    </div>
+                    <span className={`text-[10px] md:text-xs mt-1 text-center leading-tight ${
+                      isActive ? 'text-primary font-medium' : 'text-muted-foreground'
+                    }`}>
+                      {step.name}
+                    </span>
                   </div>
-                  <span className={`text-xs mt-1 ${
-                    isActive ? 'text-primary font-medium' : 'text-muted-foreground'
-                  }`}>
-                    {step.name}
-                  </span>
+                  {index < 5 && (
+                    <div className={`h-px w-4 md:w-8 lg:w-16 mx-1 md:mx-2 lg:mx-4 ${
+                      isCompleted ? 'bg-green-500' : 'bg-border'
+                    }`} />
+                  )}
                 </div>
-                {index < 5 && (
-                  <div className={`h-px w-16 mx-4 ${
-                    isCompleted ? 'bg-green-500' : 'bg-border'
-                  }`} />
-                )}
-              </div>
-            );
-          })}
+              );
+            })}
+          </div>
         </div>
       </div>
 

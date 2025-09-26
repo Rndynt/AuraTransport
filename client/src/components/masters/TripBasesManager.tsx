@@ -309,16 +309,33 @@ export default function TripBasesManager() {
   // Update stop times when pattern changes
   useEffect(() => {
     if (patternStops.length > 0) {
-      const newStopTimes = patternStops.map((ps) => ({
-        stopSequence: ps.stopSequence,
-        stopName: 'Stop ' + ps.stopSequence,
-        stopCode: '',
-        arriveAt: '',
-        departAt: ''
-      }));
-      setStopTimes(newStopTimes);
+      // If editing and we already have stop times, preserve existing times
+      if (editingBase && stopTimes.length > 0) {
+        // Merge pattern stops with existing stop times
+        const mergedStopTimes = patternStops.map((ps) => {
+          const existingStopTime = stopTimes.find(st => st.stopSequence === ps.stopSequence);
+          return {
+            stopSequence: ps.stopSequence,
+            stopName: `Stop ${ps.stopSequence}`,
+            stopCode: '',
+            arriveAt: existingStopTime?.arriveAt || '',
+            departAt: existingStopTime?.departAt || ''
+          };
+        });
+        setStopTimes(mergedStopTimes);
+      } else {
+        // For new trip base, create empty stop times
+        const newStopTimes = patternStops.map((ps) => ({
+          stopSequence: ps.stopSequence,
+          stopName: `Stop ${ps.stopSequence}`,
+          stopCode: '',
+          arriveAt: '',
+          departAt: ''
+        }));
+        setStopTimes(newStopTimes);
+      }
     }
-  }, [patternStops]);
+  }, [patternStops, editingBase]);
 
   const getDowBadges = (base: TripBase) => {
     const days = [
@@ -332,12 +349,12 @@ export default function TripBasesManager() {
     ];
 
     return (
-      <div className="flex gap-1">
+      <div className="flex gap-0.5">
         {days.map(day => (
           <Badge 
             key={day.key} 
             variant={day.active ? 'default' : 'outline'} 
-            className="w-6 h-6 p-0 text-xs font-mono"
+            className="w-4 h-4 p-0 text-[10px] font-mono leading-none"
           >
             {day.label}
           </Badge>
@@ -375,24 +392,22 @@ export default function TripBasesManager() {
       </div>
 
       {/* Trip Bases Table */}
-      <Card>
-        <CardContent>
-          {isLoading ? (
-            <div className="flex justify-center p-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-            </div>
-          ) : (
-            <div className="rounded-md border overflow-x-auto">
-              <Table>
+      {isLoading ? (
+        <div className="flex justify-center p-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        </div>
+      ) : (
+        <div className="rounded-md border overflow-x-auto">
+          <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>Name</TableHead>
-                    <TableHead>Pattern</TableHead>
-                    <TableHead>DOW</TableHead>
-                    <TableHead>Valid Period</TableHead>
-                    <TableHead>Origin Depart</TableHead>
-                    <TableHead>Active</TableHead>
-                    <TableHead>Actions</TableHead>
+                    <TableHead className="w-1/4 min-w-[200px]">Name</TableHead>
+                    <TableHead className="w-1/5 min-w-[150px]">Pattern</TableHead>
+                    <TableHead className="w-16">DOW</TableHead>
+                    <TableHead className="w-1/6 min-w-[120px]">Valid Period</TableHead>
+                    <TableHead className="w-20">Origin Depart</TableHead>
+                    <TableHead className="w-16">Active</TableHead>
+                    <TableHead className="w-20">Actions</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -485,8 +500,6 @@ export default function TripBasesManager() {
               </Table>
             </div>
           )}
-        </CardContent>
-      </Card>
 
       {/* Create/Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
