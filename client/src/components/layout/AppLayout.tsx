@@ -68,7 +68,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       />
       
       <div className="flex-1 flex flex-col overflow-hidden">
-        <header className="bg-card border-b border-border px-4 lg:px-6 py-4">
+        <header className="bg-card border-b border-border px-4 lg:px-6 py-3 lg:py-2">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               {/* Desktop collapse toggle button */}
