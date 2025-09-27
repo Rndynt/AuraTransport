@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { webSocketService } from "./realtime/ws";
 import { z } from "zod";
 import { 
   insertStopSchema, insertOutletSchema, insertVehicleSchema, insertLayoutSchema,
@@ -266,5 +267,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   }));
 
   const httpServer = createServer(app);
+  
+  // Initialize WebSocket service
+  webSocketService.initialize(httpServer);
+  
   return httpServer;
 }
