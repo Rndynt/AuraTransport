@@ -303,7 +303,18 @@ export class DatabaseStorage implements IStorage {
         FROM ${patternStops} ps
         JOIN ${stops} s ON ps.stop_id = s.id
         WHERE ps.pattern_id = ${trips.patternId}
-      )`
+      )`,
+      availableSeats: sql<number>`(
+        SELECT COALESCE(${trips.capacity}, 0) - COALESCE(SUM(b.passengers_count), 0)
+        FROM ${bookings} b
+        INNER JOIN ${tripStopTimes} origin_tst ON origin_tst.trip_id = b.trip_id AND origin_tst.stop_id = b.origin_stop_id
+        INNER JOIN ${tripStopTimes} dest_tst ON dest_tst.trip_id = b.trip_id AND dest_tst.stop_id = b.destination_stop_id
+        INNER JOIN ${tripStopTimes} outlet_tst ON outlet_tst.trip_id = b.trip_id AND outlet_tst.stop_id = ${outletStopId}
+        WHERE b.trip_id = ${trips.id}
+        AND b.status IN ('confirmed', 'checked_in')
+        AND origin_tst.stop_sequence <= outlet_tst.stop_sequence
+        AND outlet_tst.stop_sequence < dest_tst.stop_sequence
+      )`.as('available_seats')
     })
     .from(trips)
     .innerJoin(tripPatterns, eq(trips.patternId, tripPatterns.id))
@@ -344,7 +355,8 @@ export class DatabaseStorage implements IStorage {
       status: (row.status || 'scheduled') as any,
       departAtAtOutlet: row.departAtOutlet,
       finalArrivalAt: row.finalArrivalAt,
-      stopCount: row.stopCount
+      stopCount: row.stopCount,
+      availableSeats: Math.max(0, row.availableSeats || row.capacity || 0)
     }));
   }
 
