@@ -17,7 +17,7 @@ import { z } from "zod";
 
 // Enums
 export const tripStatusEnum = pgEnum('trip_status', ['scheduled', 'canceled', 'closed']);
-export const bookingStatusEnum = pgEnum('booking_status', ['pending', 'paid', 'canceled', 'refunded']);
+export const bookingStatusEnum = pgEnum('booking_status', ['pending', 'confirmed', 'checked_in', 'paid', 'canceled', 'refunded']);
 export const channelEnum = pgEnum('channel', ['CSO', 'WEB', 'APP', 'OTA']);
 export const paymentMethodEnum = pgEnum('payment_method', ['cash', 'qr', 'ewallet', 'bank']);
 export const paymentStatusEnum = pgEnum('payment_status', ['pending', 'success', 'failed']);

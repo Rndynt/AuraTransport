@@ -306,8 +306,9 @@ export class DatabaseStorage implements IStorage {
       )`,
       availableSeats: sql<number>`(
         SELECT COALESCE(${trips.capacity}, 0) - COALESCE(
-          (SELECT SUM(b.passengers_count)
+          (SELECT COUNT(p.id)
            FROM ${bookings} b
+           LEFT JOIN ${passengers} p ON p.booking_id = b.id
            INNER JOIN ${tripStopTimes} origin_tst ON origin_tst.trip_id = b.trip_id AND origin_tst.stop_id = b.origin_stop_id
            INNER JOIN ${tripStopTimes} dest_tst ON dest_tst.trip_id = b.trip_id AND dest_tst.stop_id = b.destination_stop_id
            INNER JOIN ${tripStopTimes} outlet_tst ON outlet_tst.trip_id = b.trip_id AND outlet_tst.stop_id = ${outletStopId}
@@ -324,8 +325,8 @@ export class DatabaseStorage implements IStorage {
            AND EXISTS (
              SELECT 1 FROM unnest(sh.leg_indexes) AS leg_idx
              INNER JOIN ${tripLegs} tl ON tl.trip_id = ${trips.id} AND tl.leg_index = leg_idx
-             INNER JOIN ${tripStopTimes} leg_origin_tst ON tl.origin_stop_time_id = leg_origin_tst.id
-             INNER JOIN ${tripStopTimes} leg_dest_tst ON tl.destination_stop_time_id = leg_dest_tst.id
+             INNER JOIN ${tripStopTimes} leg_origin_tst ON leg_origin_tst.trip_id = ${trips.id} AND leg_origin_tst.stop_id = tl.from_stop_id
+             INNER JOIN ${tripStopTimes} leg_dest_tst ON leg_dest_tst.trip_id = ${trips.id} AND leg_dest_tst.stop_id = tl.to_stop_id
              WHERE leg_origin_tst.stop_sequence <= outlet_tst.stop_sequence
              AND outlet_tst.stop_sequence < leg_dest_tst.stop_sequence
            )), 0)

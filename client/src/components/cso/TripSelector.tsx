@@ -364,7 +364,7 @@ export default function TripSelector({
             <div className="p-4">
               {/* Group trips by route */}
               {Object.entries(
-                trips.reduce((groups: Record<string, CsoAvailableTrip[]>, trip) => {
+                (trips || []).reduce((groups: Record<string, CsoAvailableTrip[]>, trip) => {
                   const routeName = trip.patternPath;
                   if (!groups[routeName]) {
                     groups[routeName] = [];
