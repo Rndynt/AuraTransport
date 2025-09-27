@@ -4,6 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { tripsApi } from '@/lib/api';
 import { useSeatHold } from '@/hooks/useSeatHold';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { Grid3X3, AlertTriangle, RotateCcw, Loader2, Car, Info } from 'lucide-react';
 import type { Trip, SeatmapResponse } from '@/types';
 import PassengerDetailModal from './PassengerDetailModal';
@@ -29,6 +30,14 @@ export default function SeatMap({
   const [showPassengerModal, setShowPassengerModal] = useState(false);
   const [selectedSeatForDetails, setSelectedSeatForDetails] = useState<string | null>(null);
   const { createHold, releaseHold, getHoldTTL, isHeld } = useSeatHold();
+  
+  // WebSocket integration for real-time seat updates
+  const {
+    isConnected,
+    subscribeToTrip,
+    unsubscribeFromTrip,
+    addEventListener
+  } = useWebSocket();
 
   const { data: seatmap, isLoading, refetch } = useQuery({
     queryKey: ['/api/trips', trip.id, 'seatmap', originSeq, destinationSeq],
@@ -55,6 +64,63 @@ export default function SeatMap({
   useEffect(() => {
     setLocalSelectedSeats(new Set(selectedSeats));
   }, [selectedSeats]);
+
+  // WebSocket subscription for real-time trip updates
+  useEffect(() => {
+    if (!isConnected || !trip.id) {
+      return;
+    }
+
+    // Subscribe to trip-specific WebSocket room
+    subscribeToTrip(trip.id);
+    console.log(`[SeatMap WebSocket] Subscribed to trip: ${trip.id}`);
+
+    return () => {
+      unsubscribeFromTrip(trip.id);
+      console.log(`[SeatMap WebSocket] Unsubscribed from trip: ${trip.id}`);
+    };
+  }, [isConnected, trip.id, subscribeToTrip, unsubscribeFromTrip]);
+
+  // Event listeners for real-time seat inventory updates
+  useEffect(() => {
+    if (!isConnected) return;
+
+    // Handle inventory updates (seat holds/releases/bookings)
+    const unsubscribeInventory = addEventListener('INVENTORY_UPDATED', (data) => {
+      console.log('[SeatMap WebSocket] Inventory updated:', data);
+      
+      // Only refetch if this update is for our current trip
+      if (data.tripId === trip.id) {
+        refetch();
+      }
+    });
+
+    // Handle trip status changes
+    const unsubscribeStatus = addEventListener('TRIP_STATUS_CHANGED', (data) => {
+      console.log('[SeatMap WebSocket] Trip status changed:', data);
+      
+      // Refetch seat map when trip status changes (e.g., closed)
+      if (data.tripId === trip.id) {
+        refetch();
+      }
+    });
+
+    // Handle holds released events
+    const unsubscribeHolds = addEventListener('HOLDS_RELEASED', (data) => {
+      console.log('[SeatMap WebSocket] Holds released:', data);
+      
+      // Refetch seat map when holds are released
+      if (data.tripId === trip.id) {
+        refetch();
+      }
+    });
+
+    return () => {
+      unsubscribeInventory();
+      unsubscribeStatus();
+      unsubscribeHolds();
+    };
+  }, [isConnected, trip.id, addEventListener, refetch]);
 
   const handleSeatClick = async (seatNo: string) => {
     if (!seatmap) return;

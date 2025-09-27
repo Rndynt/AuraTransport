@@ -3,6 +3,7 @@ import { getConfig } from "../../config";
 import { db } from "../../db";
 import { seatHolds, seatInventory } from "@shared/schema";
 import { eq, and, lt, inArray } from "drizzle-orm";
+import { webSocketService } from "../../realtime/ws";
 
 interface SeatHoldOwner {
   operatorId: string;
@@ -98,6 +99,9 @@ export class HoldsService {
       this.seatHolds.set(seatKey, holdRef);
     }
 
+    // Emit WebSocket event for real-time updates
+    webSocketService.emitInventoryUpdated(tripId, seatNo, legIndexes);
+
     return {
       ok: true,
       holdRef,
@@ -127,6 +131,9 @@ export class HoldsService {
     }
 
     this.holds.delete(holdRef);
+
+    // Emit WebSocket event for real-time updates
+    webSocketService.emitInventoryUpdated(hold.tripId, hold.seatNo, hold.legIndexes);
   }
 
   async isSeatHeld(tripId: string, seatNo: string, legIndexes: number[]): Promise<boolean> {
