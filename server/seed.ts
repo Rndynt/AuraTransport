@@ -160,6 +160,7 @@ export async function seedData() {
   console.log("✅ Trip pattern created");
 
   // Create pattern stops with pickup-only setup
+  // Pattern A: Jakarta -> Purwakarta -> Bandung
   await storage.createPatternStop({
     patternId: patternA.id,
     stopId: jakartaStop.id,
@@ -187,6 +188,7 @@ export async function seedData() {
     alightingAllowed: true,
   });
 
+  // Pattern B: Jakarta -> Bandung -> Semarang 
   await storage.createPatternStop({
     patternId: patternB.id,
     stopId: jakartaStop.id,
@@ -383,6 +385,32 @@ export async function seedData() {
     defaultStopTimes: [
       { stopSequence: 1, arriveAt: null, departAt: "13:00" },
       { stopSequence: 2, arriveAt: "13:55", departAt: "14:00" },
+      { stopSequence: 3, arriveAt: "15:00", departAt: null },
+    ],
+  });
+
+  const tripBase4 = await storage.createTripBase({
+    patternId: patternB.id,
+    code: "07:00-REG",
+    name: "Jakarta-Semarang 07:00",
+    active: true,
+    timezone: "Asia/Jakarta",
+    mon: true,
+    tue: true,
+    wed: true,
+    thu: true,
+    fri: true,
+    sat: true,
+    sun: true,
+    validFrom: "2025-01-01",
+    validTo: "2025-12-31",
+    defaultLayoutId: layout8.id,
+    defaultVehicleId: vehicleB.id,
+    capacity: 8,
+    channelFlags: { CSO: true, WEB: true, APP: true, OTA: false },
+    defaultStopTimes: [
+      { stopSequence: 1, arriveAt: null, departAt: "07:00" },
+      { stopSequence: 2, arriveAt: "08.20", departAt: "08:40" },
       { stopSequence: 3, arriveAt: "15:00", departAt: null },
     ],
   });
