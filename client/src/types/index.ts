@@ -20,6 +20,7 @@ export interface SeatAvailability {
   available: boolean;
   held: boolean;
   holdRef?: string;
+  bookedType?: 'main' | 'transit' | null;
 }
 
 export interface SeatmapResponse {

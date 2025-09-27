@@ -212,24 +212,65 @@ export class TripsService {
     // Get seat inventory for required legs
     const inventory = await this.storage.getSeatInventory(tripId, legIndexes);
     
+    // Get all bookings for this trip to determine booking types
+    const allBookings = await this.storage.getBookings(tripId);
+    const activeBookings = allBookings.filter(booking => 
+      booking.status === 'paid' || booking.status === 'pending'
+    );
+    
+    // Get all trip stop times to understand the full trip coverage
+    const tripStopTimes = await this.storage.getTripStopTimes(tripId);
+    const totalStops = tripStopTimes.length;
+    
     // Group by seat number and check availability
-    const seatAvailability: Record<string, { available: boolean; held: boolean; holdRef?: string }> = {};
+    const seatAvailability: Record<string, { 
+      available: boolean; 
+      held: boolean; 
+      holdRef?: string; 
+      bookedType?: 'main' | 'transit' | null;
+    }> = {};
     
     // Initialize all seats as available
     const seatMap = layout.seatMap as any[];
     seatMap.forEach(seat => {
-      seatAvailability[seat.seat_no] = { available: true, held: false };
+      seatAvailability[seat.seat_no] = { available: true, held: false, bookedType: null };
     });
 
-    // Check each required leg for seat availability
+    // Create a map of seat bookings for efficiency
+    const seatBookingMap = new Map<string, 'main' | 'transit'>();
+    
+    for (const booking of activeBookings) {
+      // Check if this booking overlaps with the requested journey
+      if (booking.originSeq < destinationSeq && booking.destinationSeq > originSeq) {
+        const passengers = await this.storage.getPassengers(booking.id);
+        const bookingStopCoverage = booking.destinationSeq - booking.originSeq;
+        const totalTripCoverage = totalStops - 1; // Total legs
+        
+        // If booking covers more than 70% of the trip, consider it "main"
+        // Otherwise, consider it "transit"
+        const bookingType: 'main' | 'transit' = (bookingStopCoverage / totalTripCoverage) > 0.7 ? 'main' : 'transit';
+        
+        passengers.forEach(passenger => {
+          seatBookingMap.set(passenger.seatNo, bookingType);
+        });
+      }
+    }
+
+    // Check each required leg for seat availability and determine booking type
     inventory.forEach(inv => {
       if (inv.booked) {
-        seatAvailability[inv.seatNo] = { available: false, held: false };
+        const bookedType = seatBookingMap.get(inv.seatNo) || null;
+        seatAvailability[inv.seatNo] = { 
+          available: false, 
+          held: false, 
+          bookedType 
+        };
       } else if (inv.holdRef) {
         seatAvailability[inv.seatNo] = { 
           available: false, 
           held: true, 
-          holdRef: inv.holdRef 
+          holdRef: inv.holdRef,
+          bookedType: null
         };
       }
     });
@@ -264,23 +305,43 @@ export class TripsService {
     const allBookings = await this.storage.getBookings(tripId);
     const seatBookings = [];
     
+    // Get all trip stop times to understand the full trip coverage for booking type determination
+    const tripStopTimes = await this.storage.getTripStopTimes(tripId);
+    const totalStops = tripStopTimes.length;
+    
     for (const booking of allBookings) {
       if (booking.status === 'paid' || booking.status === 'pending') {
         const passengers = await this.storage.getPassengers(booking.id);
         const seatPassenger = passengers.find(p => p.seatNo === seatNo);
         
+        // Include both overlapping bookings and those that completely cover the journey
         if (seatPassenger && 
-            booking.originSeq <= originSeq && 
-            booking.destinationSeq >= destinationSeq) {
+            booking.originSeq < destinationSeq && 
+            booking.destinationSeq > originSeq) {
           const payments = await this.storage.getPayments(booking.id);
           const originStop = await this.storage.getStopById(booking.originStopId);
           const destinationStop = await this.storage.getStopById(booking.destinationStopId);
+          
+          // Determine booking type based on trip coverage
+          const bookingStopCoverage = booking.destinationSeq - booking.originSeq;
+          const totalTripCoverage = totalStops - 1; // Total legs
+          const bookingType: 'main' | 'transit' = (bookingStopCoverage / totalTripCoverage) > 0.7 ? 'main' : 'transit';
+          
+          // Determine overlap type with requested journey
+          const overlapType = 
+            (booking.originSeq <= originSeq && booking.destinationSeq >= destinationSeq) ? 'covers' :
+            (booking.originSeq >= originSeq && booking.destinationSeq <= destinationSeq) ? 'within' :
+            (booking.originSeq < originSeq && booking.destinationSeq > originSeq && booking.destinationSeq < destinationSeq) ? 'starts_before' :
+            (booking.originSeq > originSeq && booking.originSeq < destinationSeq && booking.destinationSeq > destinationSeq) ? 'ends_after' :
+            'partial_overlap';
           
           seatBookings.push({
             booking: {
               ...booking,
               originStop,
-              destinationStop
+              destinationStop,
+              bookingType,
+              overlapType
             },
             passenger: seatPassenger,
             payments
@@ -295,6 +356,14 @@ export class TripsService {
         available: false 
       };
     }
+
+    // Sort bookings by relevance: covers -> within -> partial overlaps
+    seatBookings.sort((a, b) => {
+      const relevanceOrder = { covers: 0, within: 1, starts_before: 2, ends_after: 3, partial_overlap: 4 };
+      const aRelevance = relevanceOrder[a.booking.overlapType as keyof typeof relevanceOrder] || 99;
+      const bRelevance = relevanceOrder[b.booking.overlapType as keyof typeof relevanceOrder] || 99;
+      return aRelevance - bRelevance;
+    });
 
     return {
       seatNo,

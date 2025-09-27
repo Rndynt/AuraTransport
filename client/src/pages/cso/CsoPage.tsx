@@ -151,8 +151,28 @@ export default function CsoPage() {
   };
 
   const handleNewBooking = () => {
+    // Clear booking result
     setBookingResult(null);
+    
+    // Clear selected CSO trip and all trip-related state
+    setSelectedCsoTrip(undefined);
+    
+    // Clear all booking flow state including trip, route, seats, passengers, and payment
+    updateState({ 
+      trip: undefined,
+      originStop: undefined,
+      destinationStop: undefined,
+      originSeq: undefined,
+      destinationSeq: undefined,
+      selectedSeats: [],
+      passengers: [],
+      payment: undefined
+    });
+    
+    // Reset flow to initial state
     resetFlow();
+    
+    // Clear any held seats
     releaseAllHolds();
   };
 

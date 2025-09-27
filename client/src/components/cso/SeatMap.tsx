@@ -131,6 +131,15 @@ export default function SeatMap({
       if (seatAvailability.held) {
         return 'seat held';
       }
+      
+      // Use bookedType to determine specific booked class
+      if (seatAvailability.bookedType === 'main') {
+        return 'seat booked-main';
+      } else if (seatAvailability.bookedType === 'transit') {
+        return 'seat booked-transit';
+      }
+      
+      // Fallback to generic booked class
       return 'seat booked';
     }
     
@@ -196,23 +205,31 @@ export default function SeatMap({
       </CardHeader>
       <CardContent>
         {/* Seat Legend */}
-        <div className="bg-card p-4 rounded-lg border border-border mb-4">
-          <h4 className="text-sm font-semibold mb-3">Seat Legend</h4>
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div className="flex items-center space-x-2">
-              <div className="seat available w-6 h-6 flex-shrink-0 text-[10px]">A</div>
+        <div className="bg-card p-3 rounded-lg border border-border mb-4" data-testid="seat-legend">
+          <h4 className="text-sm font-semibold mb-2">Seat Legend</h4>
+          <div className="flex flex-wrap gap-2 text-xs">
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-available">
+              <div className="seat available w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">A</div>
               <span className="truncate">Available</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="seat selected w-6 h-6 flex-shrink-0 text-[10px]">S</div>
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-selected">
+              <div className="seat selected w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">S</div>
               <span className="truncate">Selected</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="seat booked w-6 h-6 flex-shrink-0 text-[10px]">B</div>
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-booked-main">
+              <div className="seat booked-main w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">M</div>
+              <span className="truncate">Main Schedule</span>
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-booked-transit">
+              <div className="seat booked-transit w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">T</div>
+              <span className="truncate">Transit</span>
+            </div>
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-booked-generic">
+              <div className="seat booked w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">B</div>
               <span className="truncate">Booked</span>
             </div>
-            <div className="flex items-center space-x-2">
-              <div className="seat held w-6 h-6 flex-shrink-0 text-[10px]">H</div>
+            <div className="flex items-center gap-1.5 min-w-0" data-testid="legend-held">
+              <div className="seat held w-5 h-5 flex-shrink-0 text-[9px] flex items-center justify-center">H</div>
               <span className="truncate">On Hold</span>
             </div>
           </div>

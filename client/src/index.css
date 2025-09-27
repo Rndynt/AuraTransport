@@ -140,6 +140,28 @@
   cursor: not-allowed;
 }
 
+.seat.booked-main {
+  background-color: hsl(0, 84%, 60%);
+  border-color: hsl(0, 84%, 50%);
+  color: hsl(0, 0%, 100%);
+  cursor: pointer;
+}
+
+.seat.booked-main:hover {
+  background-color: hsl(0, 84%, 55%);
+}
+
+.seat.booked-transit {
+  background-color: hsl(220, 84%, 60%);
+  border-color: hsl(220, 84%, 50%);
+  color: hsl(0, 0%, 100%);
+  cursor: pointer;
+}
+
+.seat.booked-transit:hover {
+  background-color: hsl(220, 84%, 55%);
+}
+
 .seat.held {
   background-color: var(--accent);
   border-color: var(--accent);
