@@ -1,5 +1,6 @@
-import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useWebSocket } from '@/hooks/useWebSocket';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -27,6 +28,15 @@ export default function TripSelector({
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
   const [materializingBaseId, setMaterializingBaseId] = useState<string | null>(null);
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // WebSocket integration for real-time updates
+  const {
+    isConnected,
+    subscribeToCso,
+    unsubscribeFromCso,
+    addEventListener
+  } = useWebSocket();
 
   const { data: outlets = [] } = useQuery({
     queryKey: ['/api/outlets'],
@@ -38,6 +48,111 @@ export default function TripSelector({
     queryFn: () => tripsApi.getCsoAvailableTrips(selectedDate, selectedOutlet!.id),
     enabled: !!selectedDate && !!selectedOutlet?.id
   });
+
+  // WebSocket subscriptions and event handling
+  useEffect(() => {
+    if (!isConnected || !selectedOutlet?.id) {
+      return;
+    }
+
+    // Subscribe to CSO room for this outlet and date
+    subscribeToCso(selectedOutlet.id, selectedDate);
+    console.log(`[CSO WebSocket] Subscribed to outlet ${selectedOutlet.id} for date ${selectedDate}`);
+
+    return () => {
+      if (selectedOutlet?.id) {
+        unsubscribeFromCso(selectedOutlet.id, selectedDate);
+        console.log(`[CSO WebSocket] Unsubscribed from outlet ${selectedOutlet.id} for date ${selectedDate}`);
+      }
+    };
+  }, [isConnected, selectedOutlet?.id, selectedDate, subscribeToCso, unsubscribeFromCso]);
+
+  // Event listeners for real-time updates
+  useEffect(() => {
+    if (!isConnected) return;
+
+    // Handle trip materialization events
+    const unsubscribeMaterialized = addEventListener('TRIP_MATERIALIZED', (data) => {
+      console.log('[CSO WebSocket] Trip materialized:', data);
+      
+      toast({
+        title: "Trip Materialized",
+        description: `Virtual trip for ${selectedDate} is now available for booking.`,
+        variant: "default"
+      });
+
+      // Invalidate and refetch available trips to show the new materialized trip
+      queryClient.invalidateQueries({
+        queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id]
+      });
+      
+      // Clear materializing state if this was the trip being materialized
+      if (data.baseId && materializingBaseId === data.baseId) {
+        setMaterializingBaseId(null);
+      }
+    });
+
+    // Handle trip status changes
+    const unsubscribeStatusChanged = addEventListener('TRIP_STATUS_CHANGED', (data) => {
+      console.log('[CSO WebSocket] Trip status changed:', data);
+      
+      if (data.status === 'closed') {
+        toast({
+          title: "Trip Closed",
+          description: "This trip has been closed by supervisor. No new bookings can be made.",
+          variant: "destructive"
+        });
+      } else if (data.status === 'canceled') {
+        toast({
+          title: "Trip Canceled",
+          description: "This trip has been canceled.",
+          variant: "destructive"
+        });
+      }
+
+      // Update the trips list to reflect status changes
+      queryClient.setQueryData<CsoAvailableTrip[]>(
+        ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+        (oldTrips = []) => {
+          return oldTrips.map(trip => 
+            trip.tripId === data.tripId 
+              ? { ...trip, status: data.status as any }
+              : trip
+          );
+        }
+      );
+    });
+
+    // Handle inventory updates (for seat count changes)
+    const unsubscribeInventoryUpdated = addEventListener('INVENTORY_UPDATED', (data) => {
+      console.log('[CSO WebSocket] Inventory updated:', data);
+      
+      // Optionally refetch trips to update seat counts
+      // For now, we'll do a lightweight update without full refetch
+      queryClient.invalidateQueries({
+        queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+        exact: false
+      });
+    });
+
+    // Handle holds released events
+    const unsubscribeHoldsReleased = addEventListener('HOLDS_RELEASED', (data) => {
+      console.log('[CSO WebSocket] Holds released:', data);
+      
+      // Update inventory to reflect released holds
+      queryClient.invalidateQueries({
+        queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+        exact: false
+      });
+    });
+
+    return () => {
+      unsubscribeMaterialized();
+      unsubscribeStatusChanged();
+      unsubscribeInventoryUpdated();
+      unsubscribeHoldsReleased();
+    };
+  }, [isConnected, addEventListener, queryClient, selectedDate, selectedOutlet?.id, materializingBaseId, toast]);
 
   // Materialize trip mutation
   const materializeMutation = useMutation({
@@ -315,7 +430,15 @@ export default function TripSelector({
                                   }
                                 </div>
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  {trip.capacity} seats
+                                  {trip.isVirtual ? (
+                                    <span className="text-blue-600">
+                                      {trip.capacity || 12} est.
+                                    </span>
+                                  ) : (
+                                    <span className="text-green-600 font-medium">
+                                      Seats: {trip.availableSeats || '?'}
+                                    </span>
+                                  )}
                                 </div>
                               </div>
                               
