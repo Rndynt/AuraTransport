@@ -403,6 +403,7 @@ export type CsoAvailableTrip = {
   departAtAtOutlet: string | null; // ISO if real; or computed from base if virtual
   finalArrivalAt: string | null;   // ISO if real; or computed from base if virtual
   stopCount: number;
+  availableSeats?: number;         // available seat count (for real trips); undefined for virtual trips
 };
 
 // Extended TripStopTime with effective flags and stop details

@@ -305,15 +305,30 @@ export class DatabaseStorage implements IStorage {
         WHERE ps.pattern_id = ${trips.patternId}
       )`,
       availableSeats: sql<number>`(
-        SELECT COALESCE(${trips.capacity}, 0) - COALESCE(SUM(b.passengers_count), 0)
-        FROM ${bookings} b
-        INNER JOIN ${tripStopTimes} origin_tst ON origin_tst.trip_id = b.trip_id AND origin_tst.stop_id = b.origin_stop_id
-        INNER JOIN ${tripStopTimes} dest_tst ON dest_tst.trip_id = b.trip_id AND dest_tst.stop_id = b.destination_stop_id
-        INNER JOIN ${tripStopTimes} outlet_tst ON outlet_tst.trip_id = b.trip_id AND outlet_tst.stop_id = ${outletStopId}
-        WHERE b.trip_id = ${trips.id}
-        AND b.status IN ('confirmed', 'checked_in')
-        AND origin_tst.stop_sequence <= outlet_tst.stop_sequence
-        AND outlet_tst.stop_sequence < dest_tst.stop_sequence
+        SELECT COALESCE(${trips.capacity}, 0) - COALESCE(
+          (SELECT SUM(b.passengers_count)
+           FROM ${bookings} b
+           INNER JOIN ${tripStopTimes} origin_tst ON origin_tst.trip_id = b.trip_id AND origin_tst.stop_id = b.origin_stop_id
+           INNER JOIN ${tripStopTimes} dest_tst ON dest_tst.trip_id = b.trip_id AND dest_tst.stop_id = b.destination_stop_id
+           INNER JOIN ${tripStopTimes} outlet_tst ON outlet_tst.trip_id = b.trip_id AND outlet_tst.stop_id = ${outletStopId}
+           WHERE b.trip_id = ${trips.id}
+           AND b.status IN ('pending', 'confirmed', 'checked_in', 'paid')
+           AND origin_tst.stop_sequence <= outlet_tst.stop_sequence
+           AND outlet_tst.stop_sequence < dest_tst.stop_sequence), 0) - COALESCE(
+          (SELECT COUNT(*)
+           FROM ${seatHolds} sh
+           INNER JOIN ${tripStopTimes} outlet_tst ON outlet_tst.trip_id = ${trips.id} AND outlet_tst.stop_id = ${outletStopId}
+           WHERE sh.trip_id = ${trips.id}
+           AND sh.expires_at > NOW()
+           AND sh.booking_id IS NULL
+           AND EXISTS (
+             SELECT 1 FROM unnest(sh.leg_indexes) AS leg_idx
+             INNER JOIN ${tripLegs} tl ON tl.trip_id = ${trips.id} AND tl.leg_index = leg_idx
+             INNER JOIN ${tripStopTimes} leg_origin_tst ON tl.origin_stop_time_id = leg_origin_tst.id
+             INNER JOIN ${tripStopTimes} leg_dest_tst ON tl.destination_stop_time_id = leg_dest_tst.id
+             WHERE leg_origin_tst.stop_sequence <= outlet_tst.stop_sequence
+             AND outlet_tst.stop_sequence < leg_dest_tst.stop_sequence
+           )), 0)
       )`.as('available_seats')
     })
     .from(trips)
