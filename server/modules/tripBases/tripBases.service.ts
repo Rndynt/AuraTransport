@@ -2,8 +2,9 @@ import { IStorage } from "../../routes";
 import { InsertTripBase, TripBase, Trip, InsertTrip } from "@shared/schema";
 import { TripLegsService } from "../tripLegs/tripLegs.service";
 import { SeatInventoryService } from "../seatInventory/seatInventory.service";
-import { format, parseISO, getDay } from "date-fns";
-import { toZonedTime, formatInTimeZone } from "date-fns-tz";
+import { format, parseISO } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+import { fromZonedHHMMToUtc, getDayInTZ, formatTimeInTZ, ensureDefaultTimezone } from "../../utils/timezone";
 
 export class TripBasesService {
   private tripLegsService: TripLegsService;
@@ -67,8 +68,9 @@ export class TripBasesService {
       return false;
     }
 
-    // Check day of week (0 = Sunday, 1 = Monday, etc.)
-    const dayOfWeek = getDay(serviceDateObj);
+    // Check day of week using the base's timezone to avoid timezone drift
+    const timezone = ensureDefaultTimezone(base.timezone);
+    const dayOfWeek = getDayInTZ(serviceDate, timezone);
     const dayFlags = [base.sun, base.mon, base.tue, base.wed, base.thu, base.fri, base.sat];
     
     return dayFlags[dayOfWeek];
@@ -94,12 +96,14 @@ export class TripBasesService {
    * Convert defaultStopTimes local time strings to timestamptz using base timezone + serviceDate
    */
   computeDefaultTimestamps(base: TripBase, serviceDate: string): any[] {
-    const serviceDateObj = parseISO(serviceDate);
     const defaultStopTimes = base.defaultStopTimes as any[];
     
     if (!Array.isArray(defaultStopTimes)) {
       throw new Error('defaultStopTimes must be an array');
     }
+
+    // Ensure timezone is set to default if not specified
+    const timezone = ensureDefaultTimezone(base.timezone);
 
     const result = defaultStopTimes.map((stopTime, index) => {
       const { stopSequence, arriveAt, departAt } = stopTime;
@@ -107,15 +111,13 @@ export class TripBasesService {
       let arriveAtTimestamp = null;
       let departAtTimestamp = null;
 
-      // Convert local time strings to timestamps with timezone
+      // Convert local time strings to UTC timestamps using proper timezone conversion
       if (arriveAt) {
-        const timeStr = `${serviceDate}T${arriveAt}`;
-        arriveAtTimestamp = toZonedTime(parseISO(timeStr), base.timezone);
+        arriveAtTimestamp = fromZonedHHMMToUtc(serviceDate, arriveAt, timezone);
       }
       
       if (departAt) {
-        const timeStr = `${serviceDate}T${departAt}`;
-        departAtTimestamp = toZonedTime(parseISO(timeStr), base.timezone);
+        departAtTimestamp = fromZonedHHMMToUtc(serviceDate, departAt, timezone);
       }
 
       // Validation rules
@@ -210,11 +212,12 @@ export class TripBasesService {
         capacity = layout?.seatMap ? (layout.seatMap as any[]).length : null;
       }
 
-      // Extract origin departure time for sorting
+      // Extract origin departure time for sorting using base timezone
       const timestamps = this.computeDefaultTimestamps(base, serviceDate);
       const firstStopTime = timestamps.find(t => t.stopSequence === 1);
+      const timezone = ensureDefaultTimezone(base.timezone);
       const originDepartHHMM = firstStopTime?.departAt ? 
-        formatInTimeZone(firstStopTime.departAt, base.timezone, 'HH:mm') : null;
+        formatTimeInTZ(firstStopTime.departAt, timezone) : null;
 
       // Create trip data
       const tripData: InsertTrip = {

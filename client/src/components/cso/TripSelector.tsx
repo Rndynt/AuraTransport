@@ -25,6 +25,7 @@ export default function TripSelector({
   onTripSelect 
 }: TripSelectorProps) {
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
+  const [materializingBaseId, setMaterializingBaseId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const { data: outlets = [] } = useQuery({
@@ -41,6 +42,7 @@ export default function TripSelector({
   // Materialize trip mutation
   const materializeMutation = useMutation({
     mutationFn: async (baseId: string) => {
+      setMaterializingBaseId(baseId);
       const response = await fetch('/api/cso/materialize-trip', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -73,6 +75,7 @@ export default function TripSelector({
       return result;
     },
     onSuccess: (data) => {
+      setMaterializingBaseId(null);
       toast({
         title: "Trip Materialized",
         description: `Virtual trip has been made available for booking.`
@@ -90,6 +93,7 @@ export default function TripSelector({
       });
     },
     onError: (error: Error) => {
+      setMaterializingBaseId(null);
       toast({
         title: "Materialize Failed",
         description: error.message,
@@ -246,7 +250,7 @@ export default function TripSelector({
               {/* Group trips by route */}
               {Object.entries(
                 trips.reduce((groups: Record<string, CsoAvailableTrip[]>, trip) => {
-                  const routeName = trip.patternPath || `Route ${trip.patternCode || 'Unknown'}`;
+                  const routeName = trip.patternPath;
                   if (!groups[routeName]) {
                     groups[routeName] = [];
                   }
@@ -273,6 +277,7 @@ export default function TripSelector({
                       })
                       .map(trip => {
                         const disabled = isTripDisabled(trip);
+                        const isCurrentlyMaterializing = materializingBaseId === trip.baseId;
                         // Fix selection logic: For virtual trips, use baseId + departure time for unique identification
                         // For real trips, use tripId. This prevents all virtual trips from showing as "Selected"
                         const isSelected = selectedTrip ? 
@@ -334,10 +339,10 @@ export default function TripSelector({
                                 className={`shrink-0 h-8 px-4 font-medium ${
                                   isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
                                 }`}
-                                disabled={disabled || materializeMutation.isPending}
+                                disabled={disabled || isCurrentlyMaterializing}
                                 data-testid={`select-trip-${trip.tripId || `${trip.baseId}-${new Date(trip.departAtAtOutlet || '').getTime()}`}`}
                               >
-                                {materializeMutation.isPending && trip.isVirtual ? (
+                                {isCurrentlyMaterializing ? (
                                   <Loader2 className="w-3 h-3 animate-spin" />
                                 ) : disabled ? (
                                   'N/A'

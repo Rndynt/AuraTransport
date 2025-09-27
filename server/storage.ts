@@ -374,8 +374,8 @@ export class DatabaseStorage implements IStorage {
           base, serviceDate, outletStop.stopSequence, maxSequence
         );
         
-        // Get pattern path - for now, use the known route since this pattern is consistent
-        const patternPath = 'Jakarta Terminal → Purwakarta → Bandung Terminal';
+        // Get pattern path - use the same logic as real trips
+        const patternPath = await this.getPatternPath(base.patternId);
         
         virtualTrips.push({
           baseId: base.id,
