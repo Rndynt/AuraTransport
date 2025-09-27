@@ -1,16 +1,19 @@
 import { IStorage } from "../../routes";
 import { InsertBooking, Booking, InsertPassenger, InsertPayment, InsertPrintJob } from "@shared/schema";
 import { HoldsService } from "../holds/holds.service";
+import { DeterministicBookingService } from "./deterministicBooking.service";
 import { PricingService } from "../pricing/pricing.service";
 import { PrintService } from "../printing/print.service";
 
 export class BookingsService {
   private holdsService: HoldsService;
+  private deterministicService: DeterministicBookingService;
   private pricingService: PricingService;
   private printService: PrintService;
 
   constructor(private storage: IStorage) {
     this.holdsService = new HoldsService();
+    this.deterministicService = new DeterministicBookingService(storage);
     this.pricingService = new PricingService(storage);
     this.printService = new PrintService();
   }
@@ -224,13 +227,31 @@ export class BookingsService {
     }
 
     const ttlClass = ttlSeconds <= 120 ? 'short' : 'long';
-    return await this.holdsService.createSeatHold(
-      tripId, 
-      seatNo, 
-      legIndexes, 
-      ttlClass,
-      { operatorId }
-    );
+    
+    // Use deterministic service for atomic database operations and WebSocket emissions
+    const result = await this.deterministicService.atomicHold({
+      tripId,
+      seatNo,
+      legIndexes,
+      operatorId,
+      ttlClass
+    });
+
+    // Convert result format to match expected response
+    if (result.success) {
+      return {
+        ok: true,
+        holdRef: result.holdRef,
+        expiresAt: result.expiresAt?.getTime(),
+        ownedByYou: true
+      };
+    } else {
+      return {
+        ok: false,
+        reason: result.reason,
+        ownedByYou: false
+      };
+    }
   }
 
   async releaseHold(holdRef: string): Promise<void> {

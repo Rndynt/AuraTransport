@@ -93,14 +93,30 @@ export class HoldsService {
 
     this.holds.set(holdRef, hold);
 
-    // Mark each leg as held
+    // Mark each leg as held in memory
     for (const legIndex of legIndexes) {
       const seatKey = this.getSeatKey(tripId, seatNo, legIndex);
       this.seatHolds.set(seatKey, holdRef);
     }
 
+    // Also update database seatInventory for consistency with seatmap queries
+    try {
+      await db.update(seatInventory)
+        .set({ holdRef })
+        .where(and(
+          eq(seatInventory.tripId, tripId),
+          eq(seatInventory.seatNo, seatNo),
+          inArray(seatInventory.legIndex, legIndexes)
+        ));
+      
+      console.log(`[HOLDS] Updated database seatInventory for hold: ${holdRef}`);
+    } catch (dbError) {
+      console.error(`[HOLDS] Failed to update database for hold ${holdRef}:`, dbError);
+    }
+
     // Emit WebSocket event for real-time updates
     webSocketService.emitInventoryUpdated(tripId, seatNo, legIndexes);
+    console.log(`[HOLDS] Emitted WebSocket INVENTORY_UPDATED for ${tripId}:${seatNo}`);
 
     return {
       ok: true,
@@ -132,8 +148,24 @@ export class HoldsService {
 
     this.holds.delete(holdRef);
 
+    // Also clear database seatInventory holdRef for consistency
+    try {
+      await db.update(seatInventory)
+        .set({ holdRef: null })
+        .where(and(
+          eq(seatInventory.tripId, hold.tripId),
+          eq(seatInventory.seatNo, hold.seatNo),
+          inArray(seatInventory.legIndex, hold.legIndexes)
+        ));
+      
+      console.log(`[HOLDS] Cleared database seatInventory for released hold: ${holdRef}`);
+    } catch (dbError) {
+      console.error(`[HOLDS] Failed to clear database for hold ${holdRef}:`, dbError);
+    }
+
     // Emit WebSocket event for real-time updates
     webSocketService.emitInventoryUpdated(hold.tripId, hold.seatNo, hold.legIndexes);
+    console.log(`[HOLDS] Emitted WebSocket INVENTORY_UPDATED for release ${hold.tripId}:${hold.seatNo}`);
   }
 
   async isSeatHeld(tripId: string, seatNo: string, legIndexes: number[]): Promise<boolean> {
