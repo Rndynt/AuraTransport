@@ -432,7 +432,7 @@ export default function TripSelector({
                                 <div className="text-xs text-muted-foreground mt-1">
                                   {trip.isVirtual ? (
                                     <span className="text-blue-600">
-                                      {trip.capacity || 12} est.
+                                      Seats: est. {trip.availableSeats || trip.capacity || '?'}
                                     </span>
                                   ) : (
                                     <span className="text-green-600 font-medium">

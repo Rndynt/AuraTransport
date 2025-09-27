@@ -31,8 +31,9 @@ export interface SeatmapResponse {
 }
 
 export interface HoldResponse {
-  holdRef: string;
-  expiresAt: number;
+  holdRef: string | null;
+  expiresAt?: number;
+  ownedByYou?: boolean;
 }
 
 export interface FareQuote {

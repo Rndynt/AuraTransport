@@ -64,31 +64,38 @@ export function useSeatHold() {
         ttlSeconds
       });
 
-      const hold: SeatHold = {
-        holdRef: response.holdRef,
-        seatNo,
-        expiresAt: response.expiresAt,
-        tripId,
-        originSeq,
-        destinationSeq
-      };
+      // Handle idempotent response
+      if (response.holdRef) {
+        // New hold created successfully
+        const hold: SeatHold = {
+          holdRef: response.holdRef,
+          seatNo,
+          expiresAt: response.expiresAt ?? Date.now() + (ttlSeconds * 1000),
+          tripId,
+          originSeq,
+          destinationSeq
+        };
 
-      setHolds(current => new Map(current.set(seatNo, hold)));
+        setHolds(current => new Map(current.set(seatNo, hold)));
 
-      toast({
-        title: "Seat Reserved",
-        description: `Seat ${seatNo} reserved for ${Math.floor(ttlSeconds / 60)}m ${ttlSeconds % 60}s`
-      });
+        toast({
+          title: "Seat Reserved",
+          description: `Seat ${seatNo} reserved for ${Math.floor(ttlSeconds / 60)}m ${ttlSeconds % 60}s`
+        });
+
+        return response.holdRef;
+      } else if (response.ownedByYou) {
+        // Seat already held by this operator (idempotent success)
+        toast({
+          title: "Seat Already Reserved",
+          description: `Seat ${seatNo} is already held by you`,
+          variant: "default"
+        });
+        return null; // No new hold created, but operation successful
+      }
 
       return response.holdRef;
     } catch (error) {
-      // Check if it's "already held by you" error, which should not be treated as failure
-      if (error instanceof Error && error.message.includes('ALREADY_HELD_BY_YOU')) {
-        // If already held by the same user, treat as success (no error toast)
-        // The existing hold info should already be in our state
-        return null; // Don't throw error
-      }
-      
       console.error('Failed to hold seat:', error);
       toast({
         title: "Failed to Reserve Seat",

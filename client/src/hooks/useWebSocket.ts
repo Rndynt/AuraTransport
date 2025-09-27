@@ -77,8 +77,8 @@ export const useWebSocket = (options: UseWebSocketOptions = {}) => {
       console.log('[WebSocket] Disconnected from server:', reason);
       setIsConnected(false);
       
-      // Only attempt reconnection for network/transport errors
-      if (reason === 'transport error' || reason === 'transport close') {
+      // Attempt reconnection for network/transport errors and ping timeouts
+      if (reason === 'transport error' || reason === 'transport close' || reason === 'ping timeout') {
         handleReconnection();
       }
     });

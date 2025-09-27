@@ -416,7 +416,8 @@ export class DatabaseStorage implements IStorage {
           status: 'scheduled',
           departAtAtOutlet: departAtOutlet,
           finalArrivalAt,
-          stopCount: patternStopsForBase.length
+          stopCount: patternStopsForBase.length,
+          availableSeats: base.capacity ?? undefined // Virtual trips show full capacity as available (estimated)
         });
       } catch (error) {
         // Skip this base if there's an error (e.g., invalid default times)

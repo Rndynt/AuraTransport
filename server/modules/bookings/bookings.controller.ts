@@ -182,10 +182,18 @@ export class BookingsController {
       
       if (result.ok) {
         res.status(201).json(result);
+      } else if (result.reason === 'already-held-by-you') {
+        // Idempotent behavior: return success if already held by same operator
+        res.status(200).json({
+          ok: true,
+          holdRef: null, // No new hold created, but request is successful
+          message: 'Seat already held by you',
+          ownedByYou: true
+        });
       } else {
         res.status(409).json({
           error: 'Hold creation failed',
-          code: result.reason === 'already-held-by-you' ? 'ALREADY_HELD_BY_YOU' : 'HELD_BY_OTHER',
+          code: 'HELD_BY_OTHER',
           details: result.reason
         });
       }
