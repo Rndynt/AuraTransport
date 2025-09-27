@@ -1,4 +1,5 @@
 import { storage } from "./storage";
+import { fromZonedHHMMToUtc } from "./utils/timezone";
 
 export async function seedData() {
   console.log("Starting seed data creation...");
@@ -229,38 +230,42 @@ export async function seedData() {
 
   console.log("✅ Trip created");
 
-  // Create trip stop times with schedule: A12:00 → C13:00 → B14:00
-  const baseTime = new Date();
-  baseTime.setHours(12, 0, 0, 0); // 12:00 PM (noon)
-
+  // Create trip stop times with schedule: A08:30 C09:30 B10:00
+  // Using Asia/Jakarta timezone with proper timezone utilities
+  
+  // Jakarta departure at 08:30 in Asia/Jakarta timezone
+  const jakartaDepartAt = fromZonedHHMMToUtc(today, "08:30", "Asia/Jakarta");
+  
   await storage.createTripStopTime({
     tripId: trip.id,
     stopId: jakartaStop.id,
     stopSequence: 1,
     arriveAt: null,
-    departAt: baseTime,
+    departAt: jakartaDepartAt,
     dwellSeconds: 0,
   });
 
-  const purwakartaArrive = new Date(baseTime.getTime() + 55 * 60 * 1000); // 12:55 PM
-  const purwakartaDepart = new Date(baseTime.getTime() + 60 * 60 * 1000); // 13:00 PM
+  // Purwakarta arrival and departure at 09:30 in Asia/Jakarta timezone
+  const purwakartaArriveAt = fromZonedHHMMToUtc(today, "09:30", "Asia/Jakarta");
+  const purwakartaDepartAt = fromZonedHHMMToUtc(today, "09:30", "Asia/Jakarta");
 
   await storage.createTripStopTime({
     tripId: trip.id,
     stopId: purwakartaStop.id,
     stopSequence: 2,
-    arriveAt: purwakartaArrive,
-    departAt: purwakartaDepart,
-    dwellSeconds: 300,
+    arriveAt: purwakartaArriveAt,
+    departAt: purwakartaDepartAt,
+    dwellSeconds: 0,
   });
 
-  const bandungArrive = new Date(baseTime.getTime() + 120 * 60 * 1000); // 14:00 PM
+  // Bandung arrival at 10:00 in Asia/Jakarta timezone
+  const bandungArriveAt = fromZonedHHMMToUtc(today, "10:00", "Asia/Jakarta");
 
   await storage.createTripStopTime({
     tripId: trip.id,
     stopId: bandungStop.id,
     stopSequence: 3,
-    arriveAt: bandungArrive,
+    arriveAt: bandungArriveAt,
     departAt: null,
     dwellSeconds: 0,
   });
@@ -307,7 +312,7 @@ export async function seedData() {
   const tripBase1 = await storage.createTripBase({
     patternId: patternA.id,
     code: "10:00-SLOT-1",
-    name: "Jakarta-Bandung 10:00 Slot-1 (12-seat)",
+    name: "Jakarta-Bandung 10:00 Slot-1",
     active: true,
     timezone: "Asia/Jakarta",
     mon: true,
@@ -333,7 +338,7 @@ export async function seedData() {
   const tripBase2 = await storage.createTripBase({
     patternId: patternA.id,
     code: "10:00-SLOT-2",
-    name: "Jakarta-Bandung 10:00 Slot-2 (8-seat)",
+    name: "Jakarta-Bandung 10:00 Slot-2",
     active: true,
     timezone: "Asia/Jakarta",
     mon: true,
@@ -359,7 +364,7 @@ export async function seedData() {
   const tripBase3 = await storage.createTripBase({
     patternId: patternA.id,
     code: "13:00-SLOT-1",
-    name: "Jakarta-Bandung 13:00 Slot-1 (12-seat)",
+    name: "Jakarta-Bandung 13:00 Slot-1",
     active: true,
     timezone: "Asia/Jakarta",
     mon: true,

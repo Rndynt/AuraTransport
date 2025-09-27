@@ -73,6 +73,7 @@ export class TripStopTimesController {
       }
       
       // Validate departure >= arrival at same stop
+      // Both times are stored as UTC in database, so direct comparison is valid
       if (stopTime.arriveAt && stopTime.departAt) {
         if (new Date(stopTime.departAt) < new Date(stopTime.arriveAt)) {
           errors.push({ 
@@ -84,6 +85,7 @@ export class TripStopTimesController {
       }
       
       // Validate chronological order with previous stop
+      // Both times are stored as UTC in database, so direct comparison is valid
       if (i > 0) {
         const prevStopTime = sortedStopTimes[i - 1];
         const prevDepartTime = prevStopTime.departAt;

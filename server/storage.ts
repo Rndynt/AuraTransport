@@ -15,6 +15,7 @@ import {
 } from "@shared/schema";
 import { db } from "./db";
 import { eq, and, desc, sql, inArray } from "drizzle-orm";
+import { fromZonedHHMMToUtc } from "./utils/timezone";
 
 export class DatabaseStorage implements IStorage {
   // Stops
@@ -430,13 +431,15 @@ export class DatabaseStorage implements IStorage {
     let finalArrivalAt = null;
     
     if (outletTime?.departAt) {
-      const departDateTime = `${serviceDate}T${outletTime.departAt}`;
-      departAtOutlet = new Date(departDateTime).toISOString();
+      // Use proper timezone handling - interpret time as Asia/Jakarta timezone
+      const departUtcTime = fromZonedHHMMToUtc(serviceDate, outletTime.departAt, "Asia/Jakarta");
+      departAtOutlet = departUtcTime.toISOString();
     }
     
     if (finalTime?.arriveAt) {
-      const arrivalDateTime = `${serviceDate}T${finalTime.arriveAt}`;
-      finalArrivalAt = new Date(arrivalDateTime).toISOString();
+      // Use proper timezone handling - interpret time as Asia/Jakarta timezone
+      const arrivalUtcTime = fromZonedHHMMToUtc(serviceDate, finalTime.arriveAt, "Asia/Jakarta");
+      finalArrivalAt = arrivalUtcTime.toISOString();
     }
     
     return { departAtOutlet, finalArrivalAt };

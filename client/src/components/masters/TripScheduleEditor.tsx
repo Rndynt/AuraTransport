@@ -153,6 +153,8 @@ export default function TripScheduleEditor({ trip, onClose }: TripScheduleEditor
           id: st.id,
           stopId: st.stopId,
           stopSequence: st.stopSequence,
+          // Convert UTC timestamps to local datetime for datetime-local inputs
+          // The browser will interpret these as local time for the input field
           arriveAt: st.arriveAt ? new Date(st.arriveAt).toISOString().slice(0, 16) : '',
           departAt: st.departAt ? new Date(st.departAt).toISOString().slice(0, 16) : '',
           dwellSeconds: st.dwellSeconds || 0,
