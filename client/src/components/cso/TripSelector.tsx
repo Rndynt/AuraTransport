@@ -336,7 +336,7 @@ export default function TripSelector({
                               <Button 
                                 variant={isSelected ? "default" : "outline"}
                                 size="sm"
-                                className={`shrink-0 h-8 px-4 font-medium ${
+                                className={`shrink-0 h-8 px-4 font-medium hidden ${
                                   isSelected ? 'bg-blue-600 hover:bg-blue-700' : ''
                                 }`}
                                 disabled={disabled || isCurrentlyMaterializing}
@@ -347,9 +347,9 @@ export default function TripSelector({
                                 ) : disabled ? (
                                   'N/A'
                                 ) : isSelected ? (
-                                  'Selected'
+                                  '' //selected
                                 ) : (
-                                  'Select'
+                                  '' //select 
                                 )}
                               </Button>
                             </div>
