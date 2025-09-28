@@ -35,6 +35,8 @@ export default function TripSelector({
     isConnected,
     subscribeToCso,
     unsubscribeFromCso,
+    subscribeToTrip,
+    unsubscribeFromTrip,
     addEventListener
   } = useWebSocket();
 
@@ -66,6 +68,33 @@ export default function TripSelector({
       }
     };
   }, [isConnected, selectedOutlet?.id, selectedDate, subscribeToCso, unsubscribeFromCso]);
+
+  // Subscribe to trip-specific WebSocket events for real-time updates
+  useEffect(() => {
+    if (!isConnected || !trips || trips.length === 0) {
+      return;
+    }
+
+    // Subscribe to WebSocket events for each available trip
+    const currentTripIds = trips
+      .filter(trip => !trip.isVirtual && trip.tripId) // Only subscribe to materialized trips with valid tripId
+      .map(trip => trip.tripId!)
+      .filter(Boolean);
+
+    console.log(`[CSO WebSocket] Subscribing to ${currentTripIds.length} trips for real-time updates`);
+    
+    currentTripIds.forEach(tripId => {
+      subscribeToTrip(tripId);
+      console.log(`[CSO WebSocket] Subscribed to trip: ${tripId}`);
+    });
+
+    return () => {
+      currentTripIds.forEach(tripId => {
+        unsubscribeFromTrip(tripId);
+        console.log(`[CSO WebSocket] Unsubscribed from trip: ${tripId}`);
+      });
+    };
+  }, [isConnected, trips, subscribeToTrip, unsubscribeFromTrip]);
 
   // Event listeners for real-time updates
   useEffect(() => {
@@ -110,40 +139,63 @@ export default function TripSelector({
         });
       }
 
-      // Update the trips list to reflect status changes
-      queryClient.setQueryData<CsoAvailableTrip[]>(
-        ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
-        (oldTrips = []) => {
-          return oldTrips.map(trip => 
-            trip.tripId === data.tripId 
-              ? { ...trip, status: data.status as any }
-              : trip
-          );
-        }
-      );
+      // Check if this status change is for one of our available trips
+      const affectsCurrentTrips = trips.some(trip => trip.tripId === data.tripId);
+      
+      if (affectsCurrentTrips) {
+        console.log('[CSO WebSocket] Trip status change affects current trips, refetching...');
+        refetchTrips();
+      } else {
+        // Update the trips list to reflect status changes
+        queryClient.setQueryData<CsoAvailableTrip[]>(
+          ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+          (oldTrips = []) => {
+            return oldTrips.map(trip => 
+              trip.tripId === data.tripId 
+                ? { ...trip, status: data.status as any }
+                : trip
+            );
+          }
+        );
+      }
     });
 
     // Handle inventory updates (for seat count changes)
     const unsubscribeInventoryUpdated = addEventListener('INVENTORY_UPDATED', (data) => {
       console.log('[CSO WebSocket] Inventory updated:', data);
       
-      // Optionally refetch trips to update seat counts
-      // For now, we'll do a lightweight update without full refetch
-      queryClient.invalidateQueries({
-        queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
-        exact: false
-      });
+      // Check if this update is for one of our available trips
+      const affectsCurrentTrips = trips.some(trip => trip.tripId === data.tripId);
+      
+      if (affectsCurrentTrips) {
+        console.log('[CSO WebSocket] Inventory update affects current trips, refetching...');
+        refetchTrips();
+      } else {
+        // Lightweight update for other trips
+        queryClient.invalidateQueries({
+          queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+          exact: false
+        });
+      }
     });
 
     // Handle holds released events
     const unsubscribeHoldsReleased = addEventListener('HOLDS_RELEASED', (data) => {
       console.log('[CSO WebSocket] Holds released:', data);
       
-      // Update inventory to reflect released holds
-      queryClient.invalidateQueries({
-        queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
-        exact: false
-      });
+      // Check if this release is for one of our available trips
+      const affectsCurrentTrips = trips.some(trip => trip.tripId === data.tripId);
+      
+      if (affectsCurrentTrips) {
+        console.log('[CSO WebSocket] Holds release affects current trips, refetching...');
+        refetchTrips();
+      } else {
+        // Update inventory to reflect released holds
+        queryClient.invalidateQueries({
+          queryKey: ['/api/cso/available-trips', selectedDate, selectedOutlet?.id],
+          exact: false
+        });
+      }
     });
 
     return () => {

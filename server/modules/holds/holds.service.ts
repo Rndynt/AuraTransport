@@ -163,9 +163,10 @@ export class HoldsService {
       console.error(`[HOLDS] Failed to clear database for hold ${holdRef}:`, dbError);
     }
 
-    // Emit WebSocket event for real-time updates
+    // Emit WebSocket events for real-time updates
     webSocketService.emitInventoryUpdated(hold.tripId, hold.seatNo, hold.legIndexes);
-    console.log(`[HOLDS] Emitted WebSocket INVENTORY_UPDATED for release ${hold.tripId}:${hold.seatNo}`);
+    webSocketService.emitHoldsReleased(hold.tripId, [hold.seatNo]);
+    console.log(`[HOLDS] Emitted WebSocket INVENTORY_UPDATED and HOLDS_RELEASED for release ${hold.tripId}:${hold.seatNo}`);
   }
 
   async isSeatHeld(tripId: string, seatNo: string, legIndexes: number[]): Promise<boolean> {
